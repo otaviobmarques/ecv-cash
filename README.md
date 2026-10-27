@@ -3,7 +3,7 @@
 Sistema financeiro SaaS multiempresa para ECVs (Empresas Credenciadas de Vistoria): laudos, contas a receber e a pagar,
 faturados, caixa, relatórios e visão contábil/gerencial. Desenvolvido pela agência REDBOX.
 
-> Estado: **Fundação** pronta (isolamento por grupo, login, perfis, auditoria, tema). Próximo módulo: cadastros e laudos.
+> Estado: **Fundação**, **app dos clientes** (login, empresas, usuários, aparência, auditoria) e **backoffice** (grupos, 2FA, suporte) prontos. Próximo módulo: cadastros e laudos.
 > Roadmap em [`docs/04-roadmap.md`](docs/04-roadmap.md).
 
 ## Documentação
@@ -27,10 +27,18 @@ pnpm db:migrate
 # 3) dados de exemplo (só desenvolvimento) e API
 export DATABASE_URL=postgres://ecv_app:app@localhost:5432/ecv_cash
 pnpm db:seed
-pnpm dev:api
+pnpm dev:api          # API em http://localhost:3000
+pnpm dev:web          # app dos clientes em http://localhost:5173
+pnpm dev:backoffice   # backoffice em http://localhost:5174
 ```
 
 Usuários do seed (senha `Senha-de-teste-1`): `admin@`, `gerente@`, `financeiro@` e `vistoriador@exemplo.local`.
+Use sempre `localhost` no navegador (a API só aceita essa origem com cookie).
+
+**Primeiro usuário do backoffice** (equipe interna): `pnpm --filter @ecv/api bo:criar-interno "Seu Nome" voce@empresa.com PLATAFORMA`.
+Ele imprime uma senha provisória. No primeiro login o backoffice pede para ligar o aplicativo autenticador (2FA).
+
+**Verificação no navegador:** `pnpm e2e <senha provisória>` percorre criar grupo, convite, login, telas e suporte (ver `e2e/smoke.ts`).
 
 ## Testes
 ```bash
@@ -42,7 +50,11 @@ Os testes da API precisam do banco do passo 1. Eles criam grupos próprios a cad
 ## Estrutura
 ```
 apps/api          API NestJS (monólito modular) + migrações SQL (apps/api/db/migrations)
+apps/web          app dos clientes (React + Vite)
+apps/backoffice   backoffice da equipe interna (React + Vite)
+packages/ui       Design System ECV Cash: tokens, componentes, cliente da API, tema
 packages/shared   regras puras compartilhadas: permissões, dinheiro, juros, contraste, validações
+e2e/              verificação ponta a ponta no navegador (manual)
 docs/             decisões, arquitetura, modelo de dados, protótipo
 scripts/          bootstrap do banco
 ```

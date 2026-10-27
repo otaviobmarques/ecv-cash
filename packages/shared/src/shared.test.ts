@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MATRIZ, PERFIS, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
-  normalizarPlaca, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
+  normalizarPlaca, criarEmpresaSchema, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
 } from './index';
 
 describe('matriz de permissões (Etapa 5)', () => {
@@ -117,6 +117,20 @@ describe('contraste do tema (Design System ECV Cash)', () => {
   it('avisa quando a cor não serve como texto sobre fundo claro', () => {
     expect(derivarTema('#FFE066').legivelSobreFundoClaro).toBe(false);
     expect(derivarTema('#104B3A').legivelSobreFundoClaro).toBe(true);
+  });
+});
+
+describe('cadastro de empresa', () => {
+  const base = { cnpj: '11.222.333/0001-81', razaoSocial: 'Loja Centro Ltda', nomeFantasia: 'Loja Centro', uf: 'sp', cidade: 'Santos', regimeTributario: 'SIMPLES_NACIONAL' };
+  it('e-mail do financeiro vazio vale como não informado', () => {
+    const r = criarEmpresaSchema.parse({ ...base, emailFinanceiro: '' });
+    expect(r.emailFinanceiro).toBeUndefined();
+    expect(r.cnpj).toBe('11222333000181');
+    expect(r.uf).toBe('SP');
+  });
+  it('e-mail preenchido precisa ser válido', () => {
+    expect(criarEmpresaSchema.safeParse({ ...base, emailFinanceiro: 'financeiro@loja.com.br' }).success).toBe(true);
+    expect(criarEmpresaSchema.safeParse({ ...base, emailFinanceiro: 'sem-arroba' }).success).toBe(false);
   });
 });
 

@@ -25,8 +25,8 @@ export class AuditoriaController {
     const rows = await this.db.tenant(contextoDb(a), async (c) =>
       (await c.query(
         `SELECT l.id, l.criado_em AS "criadoEm", l.acao, l.entidade, l.entidade_id AS "entidadeId", l.empresa_id AS "empresaId",
-                l.usuario_id AS "usuarioId", u.nome AS usuario, l.antes, l.depois, l.motivo
-           FROM auditoria_log l LEFT JOIN usuario u ON u.id = l.usuario_id
+                l.usuario_id AS "usuarioId", CASE WHEN ui.id IS NOT NULL THEN 'Equipe ECV Cash: ' || ui.nome ELSE u.nome END AS usuario, l.antes, l.depois, l.motivo
+           FROM auditoria_log l LEFT JOIN usuario u ON u.id = l.usuario_id LEFT JOIN usuario_interno ui ON ui.id = l.usuario_interno_id
           WHERE ($1::text IS NULL OR l.entidade = $1) AND ($2::text IS NULL OR l.entidade_id = $2)
             AND ($3::timestamptz IS NULL OR l.criado_em >= $3) AND ($4::timestamptz IS NULL OR l.criado_em <= $4)
             AND ($5::bigint IS NULL OR l.id < $5)

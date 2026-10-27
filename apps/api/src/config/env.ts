@@ -6,8 +6,8 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ORIGENS_PERMITIDAS: z.string().default('http://localhost:5173,http://localhost:5174'),
   SESSAO_HORAS: z.coerce.number().int().positive().default(12),
-  /** só em dev e teste: devolve o link de convite na resposta, já que ainda não há envio de e-mail */
-  EXPOR_CONVITE: z.enum(['true', 'false']).default('false'),
+  /** Enquanto não houver envio de e-mail (Fase 2), quem cria o convite recebe o link para entregar. Desligar quando o e-mail entrar. */
+  EXPOR_CONVITE: z.enum(['true', 'false']).default('true'),
   URL_APP: z.string().default('http://localhost:5173'),
   URL_BACKOFFICE: z.string().default('http://localhost:5174'),
   /** 32 bytes em base64. Cifra segredos de 2FA e assina tickets. Obrigatória em produção. */

@@ -25,7 +25,8 @@ export const criarEmpresaSchema = z.object({
   uf: z.string().trim().length(2).toUpperCase(),
   cidade: z.string().trim().min(2).max(80),
   regimeTributario: z.enum(['SIMPLES_NACIONAL', 'LUCRO_PRESUMIDO', 'LUCRO_REAL']),
-  emailFinanceiro: email.optional(),
+  /** campo opcional: texto vazio vale como "não informado" */
+  emailFinanceiro: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), email.optional()),
 });
 
 export const criarUsuarioSchema = z.object({

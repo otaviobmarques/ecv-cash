@@ -1,0 +1,40 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { Carregando } from '@ecv/ui';
+import { useEu } from './sessao';
+import { Shell } from './Shell';
+import { Login } from './paginas/Login';
+import { Convite } from './paginas/Convite';
+import { Suporte } from './paginas/Suporte';
+import { Inicio } from './paginas/Inicio';
+import { Empresas } from './paginas/Empresas';
+import { Usuarios } from './paginas/Usuarios';
+import { Aparencia } from './paginas/Aparencia';
+import { Auditoria } from './paginas/Auditoria';
+
+export function App() {
+  const { data: eu, isLoading, isError } = useEu();
+  if (isLoading) return <Carregando />;
+  if (isError) return <Falha />;
+  return (
+    <Routes>
+      <Route path="/login" element={eu ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/convite" element={<Convite />} />
+      <Route path="/suporte" element={<Suporte />} />
+      <Route element={eu ? <Shell eu={eu} /> : <Navigate to="/login" replace />}>
+        <Route index element={<Inicio />} />
+        <Route path="empresas" element={<Empresas />} />
+        <Route path="usuarios" element={<Usuarios />} />
+        <Route path="aparencia" element={<Aparencia />} />
+        <Route path="auditoria" element={<Auditoria />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
+const Falha = () => (
+  <div className="centro"><div className="cartao">
+    <h1>Sem conexão com o servidor</h1>
+    <p className="mut">Não foi possível carregar o sistema. Confira sua internet e atualize a página.</p>
+  </div></div>
+);

@@ -89,7 +89,7 @@ export class BoService {
   async auditoria(grupoId: string, limite = 100) {
     return this.db.tenant(na(grupoId), async (c) => (await c.query(
       `SELECT l.id, l.criado_em AS "criadoEm", l.acao, l.entidade, l.entidade_id AS "entidadeId", l.motivo,
-              coalesce(u.nome, 'Equipe ECV Cash: ' || ui.nome) AS autor
+              CASE WHEN ui.id IS NOT NULL THEN 'Equipe ECV Cash: ' || ui.nome ELSE u.nome END AS autor
          FROM auditoria_log l LEFT JOIN usuario u ON u.id = l.usuario_id LEFT JOIN usuario_interno ui ON ui.id = l.usuario_interno_id
         ORDER BY l.id DESC LIMIT $1`, [limite])).rows);
   }

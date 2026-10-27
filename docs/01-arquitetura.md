@@ -6,7 +6,7 @@ Monólito modular em TypeScript. Microsserviços não se justificam na escala (3
 |---|---|
 | API | NestJS (Express), um módulo por contexto de negócio |
 | Banco | PostgreSQL 16, **SQL-first** (migrações em SQL puro, consultas explícitas com `pg`) |
-| Front (próximo) | React + Vite, TanStack Query/Table, React Hook Form + Zod, Tailwind + Radix sobre os tokens do ECV Cash |
+| Front | React 19 + Vite, TanStack Query, React Hook Form + Zod (os mesmos schemas da API), CSS puro sobre os tokens do ECV Cash, `<dialog>` nativo; fonte DejaVu Sans via `@fontsource` |
 | Filas (futuro) | pg-boss (fila no próprio PostgreSQL; sem Redis) |
 | PDF | Chromium headless (HTML/CSS) |
 | Arquivos / e-mail | S3 / SES |

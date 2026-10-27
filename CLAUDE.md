@@ -22,5 +22,9 @@ Idioma: tudo em português do Brasil (código de domínio, mensagens, commits). 
 8. Interface: tokens do Design System ECV Cash (ver `docs/00-decisoes-de-produto.md`, seção Marca). Estado nunca só por cor: ícone e texto.
 9. Mensagens de erro ao usuário: o que houve e como corrigir, sem vazar detalhe interno.
 
+10. **Front**: CSS puro sobre tokens (`packages/ui/src/estilo.css`), sem Tailwind. Diálogos usam `<dialog>` nativo. Cache de consultas: ao entrar ou sair, nunca `queryClient.clear()` (derruba a consulta de sessão); use `removeQueries` dos outros dados.
+11. **Convite**: enquanto não houver envio de e-mail (Fase 2), quem cria o convite recebe o link para entregar (`EXPOR_CONVITE=true`). Desligar quando o e-mail entrar.
+12. **Suporte ("entrar como")** grava toda ação com `usuario_interno_id`; no log o autor aparece como "Equipe ECV Cash: Nome", nunca como o usuário cliente.
+
 ## Estado
-Fundação concluída. Ver `docs/04-roadmap.md` para o próximo módulo.
+Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Ver `docs/04-roadmap.md`.

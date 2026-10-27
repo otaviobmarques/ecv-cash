@@ -28,3 +28,5 @@ jobs:
         run: ECV_OWNER_PW=owner ECV_APP_PW=app scripts/db-bootstrap.sh -h localhost -U postgres
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Build dos três apps
+        run: pnpm build

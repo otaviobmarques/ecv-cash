@@ -232,6 +232,11 @@ describe('backoffice', () => {
       const linha = (await db.tenant({ grupoId, rede: true, empresas: [] }, (c) => c.query(`SELECT usuario_interno_id FROM auditoria_log WHERE acao = 'empresa.editada'`))).rows[0];
       expect(linha.usuario_interno_id).toBe(suporte.eu.id);
 
+      // no log do cliente a autoria é da equipe interna, nunca do usuário em cujo nome o suporte entrou
+      const itens = (await adm.get('/auditoria?limite=50')).body.itens as { acao: string; usuario: string }[];
+      expect(itens.find((i) => i.acao === 'empresa.editada')!.usuario).toBe('Equipe ECV Cash: Interno SUPORTE');
+      expect(itens.find((i) => i.acao === 'suporte.sessao_aberta')!.usuario).toMatch(/^Equipe ECV Cash: /);
+
       // o detalhe do grupo lista o acesso
       expect(((await suporte.c.get(`/backoffice/grupos/${grupoId}`)).body.acessosSuporte as unknown[]).length).toBe(1);
 

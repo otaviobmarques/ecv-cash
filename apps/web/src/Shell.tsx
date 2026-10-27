@@ -1,0 +1,83 @@
+import { useEffect } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ROTULO_PERFIL, type Permissao } from '@ecv/shared';
+import { Botao, Icone, aplicarTema, useToast, type NomeIcone } from '@ecv/ui';
+import { api } from './api';
+import { useSessao } from './sessao';
+import type { Empresa, Eu, TemaEfetivo } from './tipos';
+import redbox from './redbox.png';
+
+const MENU: { para: string; rotulo: string; icone: NomeIcone; perm?: Permissao; fim?: boolean }[] = [
+  { para: '/', rotulo: 'Início', icone: 'painel', fim: true },
+  { para: '/empresas', rotulo: 'Empresas', icone: 'empresas' },
+  { para: '/usuarios', rotulo: 'Usuários', icone: 'usuarios', perm: 'usuario.gerir' },
+  { para: '/aparencia', rotulo: 'Aparência', icone: 'aparencia', perm: 'tema.editar' },
+  { para: '/auditoria', rotulo: 'Auditoria', icone: 'auditoria', perm: 'auditoria.ver' },
+];
+
+export function Shell({ eu }: { eu: Eu }) {
+  const { sair } = useSessao();
+  const qc = useQueryClient();
+  const nav = useNavigate();
+  const { avisar } = useToast();
+
+  const empresas = useQuery({ queryKey: ['empresas'], queryFn: () => api.get<Empresa[]>('/empresas') });
+  const tema = useQuery({ queryKey: ['tema', eu.empresaAtivaId], queryFn: () => api.get<TemaEfetivo | Record<string, never>>('/tema') });
+  useEffect(() => {
+    const t = tema.data as TemaEfetivo | undefined;
+    aplicarTema(t && 'derivado' in t ? t.derivado : null);
+  }, [tema.data]);
+
+  const trocar = async (empresaId: string) => {
+    try {
+      const novo = await api.post<Eu>('/auth/empresa-ativa', { empresaId });
+      qc.setQueryData(['eu'], novo);
+      qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'eu' && q.queryKey[0] !== 'empresas' });
+    } catch (e) { avisar((e as Error).message, 'erro'); }
+  };
+  const ativa = empresas.data?.find((e) => e.id === eu.empresaAtivaId);
+  const itens = MENU.filter((m) => !m.perm || eu.permissoes.includes(m.perm));
+  const iniciais = eu.nome.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+
+  return (
+    <>
+      {eu.suporte && (
+        <div className="faixa-suporte" role="status">
+          <span>Acesso de suporte por <b>{eu.suporte.usuarioInterno}</b> · motivo: {eu.suporte.motivo} · termina às {new Date(eu.suporte.expiraEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+          <button className="btn" onClick={async () => { await sair(); nav('/login'); }}>Encerrar acesso</button>
+        </div>
+      )}
+      <div className="shell">
+        <aside className="lateral-nav">
+          <div className="marca"><i>EC</i><span>ECV Cash<small>{ativa?.nomeFantasia ?? ' '}</small></span></div>
+          <nav className="nav" aria-label="Menu principal">
+            {itens.map((m) => (
+              <NavLink key={m.para} to={m.para} end={m.fim}><Icone nome={m.icone} />{m.rotulo}</NavLink>
+            ))}
+          </nav>
+          <div className="rodape-nav">
+            <span className="peq mut">Desenvolvido por</span>
+            <img src={redbox} alt="REDBOX" />
+          </div>
+        </aside>
+        <div className="principal">
+          <header className="topo">
+            <div>
+              <label htmlFor="empresa-ativa">Empresa ativa</label>
+              <select id="empresa-ativa" value={eu.empresaAtivaId ?? ''} onChange={(e) => trocar(e.target.value)} disabled={(empresas.data?.length ?? 0) < 2}>
+                {empresas.data?.map((e) => <option key={e.id} value={e.id}>{e.nomeFantasia}</option>)}
+              </select>
+            </div>
+            <div className="usuario">
+              <div className="avatar" aria-hidden="true">{iniciais}</div>
+              <div><b>{eu.nome}</b><span className="mut peq">{eu.perfilAtivo ? ROTULO_PERFIL[eu.perfilAtivo] : ''}</span></div>
+              <Botao variante="sec" pequeno onClick={async () => { await sair(); nav('/login'); }}>Sair</Botao>
+            </div>
+          </header>
+          <main className="conteudo"><Outlet context={{ eu, empresas: empresas.data ?? [] }} /></main>
+        </div>
+      </div>
+    </>
+  );
+}
