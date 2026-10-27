@@ -48,3 +48,13 @@ export interface ContaFinanceira {
   pedidoPendente: { id: string; solicitadoPor: string; criadoEm: string } | null;
 }
 export interface PedidoConta { id: string; empresaId: string; contaId: string | null; conta: string | null; dados: Record<string, unknown>; status: 'PENDENTE' | 'APROVADO' | 'REJEITADO'; solicitadoPor: string; criadoEm: string; decididoEm: string | null; motivoRejeicao: string | null }
+
+export interface Laudo {
+  id: string; numero: number; numeroLaudo: string | null; empresaId: string; placa: string; chassi: string | null; dataLaudo: string;
+  clienteId: string; cliente: string; servicoId: string; servico: string; vistoriadorId: string; vistoriador: string; formaPagamentoId: string; forma: string;
+  precoTabelaCentavos: number | null; precoManual: boolean; valorCobradoCentavos: number; descontoCentavos: number; ajusteMotivo: string | null; duplicidadeMotivo: string | null; observacao: string | null;
+  status: 'ATIVO' | 'CANCELADO'; cancelamentoPedidoEm: string | null; cancelamentoPedidoMotivo: string | null; cancelamentoPedidoPor: string | null; cancelamentoPedidoPorId: string | null;
+  canceladoEm: string | null; motivoCancelamento: string | null; revisadoEm: string | null; travado: boolean; criadoEm: string; criadoPor: string | null;
+  custosCentavos?: number; margemCentavos?: number; custos?: { descricao: string; tipo: 'VALOR' | 'PERCENTUAL'; valorCentavos: number; geraContaPagar: boolean }[];
+}
+export interface ResultadoLote { linha: number; ok: boolean; laudo?: Laudo; erro?: string; campos?: Record<string, string> }

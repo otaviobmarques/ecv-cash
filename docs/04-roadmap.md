@@ -6,7 +6,7 @@
 - [x] Backoffice: login com 2FA, grupos (criar, suspender, reativar), detalhe, log, redefinir acesso, "entrar como" auditado. Falta: criar empresas adicionais e gerir usuários internos pela tela.
 - [x] Cadastros, banco e API: clientes e preços (vigência), serviços e custos, vistoriadores, formas de pagamento (taxas por loja), fornecedores, contas financeiras e bancárias com confirmação, plano de contas.
 - [x] Cadastros, telas: clientes e preços, fornecedores, serviços e custos, vistoriadores, formas de pagamento (taxas por loja), contas bancárias (pedidos e aprovação), plano de contas.
-- [ ] Laudos: lançamento, lote, duplicidade, preço manual, desconto, cancelamento.
+- [x] Laudos: lançamento (um e em lote de até 50), duplicidade, preço manual com revisão, desconto, edição, cancelamento com pedido e autorização, custos gravados e margem. Falta: gerar o título a receber (próximo módulo).
 - [ ] Contas a receber: título por laudo, baixa total e parcial, estorno.
 - [ ] Faturados: fatura por empresa × cliente × período, PDF, QR PIX, baixa em lote, juros e multa.
 - [ ] Contas a pagar: títulos, recorrência simples, comprovante, aprovação.

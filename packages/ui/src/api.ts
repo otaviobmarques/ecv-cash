@@ -1,5 +1,5 @@
 export class ErroApi extends Error {
-  constructor(mensagem: string, readonly status: number, readonly campos?: Record<string, string>) {
+  constructor(mensagem: string, readonly status: number, readonly campos?: Record<string, string>, readonly corpo?: Record<string, unknown>) {
     super(mensagem);
   }
 }
@@ -20,7 +20,7 @@ export function criarApi(base: string) {
     }
     if (r.status === 204) return undefined as T;
     const json = await r.json().catch(() => ({}) as Record<string, unknown>);
-    if (!r.ok) throw new ErroApi((json.mensagem as string) ?? 'Algo deu errado. Tente de novo em instantes.', r.status, json.campos as Record<string, string> | undefined);
+    if (!r.ok) throw new ErroApi((json.mensagem as string) ?? 'Algo deu errado. Tente de novo em instantes.', r.status, json.campos as Record<string, string> | undefined, json);
     return json as T;
   }
   return {

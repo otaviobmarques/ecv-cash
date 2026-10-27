@@ -15,9 +15,16 @@ Da loja (isolamento por loja): `forma_pagamento_empresa`, `vistoriador` (visíve
 - `conta_financeira`: a conta que aparece na fatura (`exibir_na_fatura`) só existe completa (CHECK no banco). Mudança em conta exibida passa por `conta_financeira_pedido` e confirmação do Administrativo com senha.
 - Todo grupo novo recebe o plano de contas e as formas de pagamento padrão (`semearPadroes`).
 
+**Laudos (migração 0005).** Da loja (isolamento por loja): `laudo` e `laudo_custo`.
+- `laudo` guarda o preço de tabela do dia, o valor cobrado e se o valor foi digitado (`preco_manual`, só quando o cliente não tinha preço). Reajuste futuro não mexe nele.
+- Placa validada no banco (padrão antigo e Mercosul); nº do laudo único entre os ativos da loja; duplicidade (loja + placa + serviço + data) é aviso na aplicação, que o Gerente e o Administrativo liberam com motivo.
+- `laudo_custo` é o retrato dos custos do serviço no lançamento (recalculado só quando o valor ou o serviço mudam; os anteriores ficam inativos). Margem e custos só aparecem para quem tem `relatorio.margem`.
+- Gatilho `laudo_protegido`: laudo cancelado não muda mais; laudo travado (futuramente faturado ou baixado) não muda valor, preço, cliente, serviço, data, placa, forma nem loja.
+- Cancelamento: o Vistoriador pede, o Gerente ou o Administrativo autoriza (não o próprio autor do pedido); motivo sempre registrado.
+
 ## Planejado (por módulo)
 - **Cadastros que faltam:** `aliquota_imposto`.
-- **Laudos:** `laudo` (snapshots de preço de tabela, preço cobrado, desconto, `preco_manual`; status ativo/cancelado), `laudo_custo`, `laudo_comissao`,
+- **Laudos que faltam:** `laudo_comissao`,
   `regra_comissao`, `fechamento_comissao`, `regra_repasse`, `repasse_apuracao`.
 - **Receber e faturas:** `titulo_receber` (1:1 com laudo), `baixa_receber` (imutável, `estorno_de`), `baixa_lote`, `fatura` (empresa × cliente × período),
   `liquidacao_cartao`, `cheque`.

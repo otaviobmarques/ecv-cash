@@ -12,6 +12,8 @@ import { Aparencia } from './paginas/Aparencia';
 import { Auditoria } from './paginas/Auditoria';
 import { Clientes } from './paginas/Clientes';
 import { Fornecedores } from './paginas/Fornecedores';
+import { LancarLaudo } from './paginas/LancarLaudo';
+import { Laudos } from './paginas/Laudos';
 import { Cadastros } from './paginas/Cadastros';
 
 export function App() {
@@ -25,6 +27,8 @@ export function App() {
       <Route path="/suporte" element={<Suporte />} />
       <Route element={eu ? <Shell eu={eu} /> : <Navigate to="/login" replace />}>
         <Route index element={<Inicio />} />
+        <Route path="lancar" element={<LancarLaudo />} />
+        <Route path="laudos" element={<Laudos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="fornecedores" element={<Fornecedores />} />
         <Route path="cadastros" element={<Cadastros />} />

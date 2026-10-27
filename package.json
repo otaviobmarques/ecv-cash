@@ -15,6 +15,7 @@
     "dev:web": "pnpm --filter @ecv/web dev",
     "dev:backoffice": "pnpm --filter @ecv/backoffice dev",
     "e2e": "tsx e2e/smoke.ts",
-    "e2e:cadastros": "tsx e2e/cadastros.ts"
+    "e2e:cadastros": "tsx e2e/cadastros.ts",
+    "e2e:laudos": "tsx e2e/laudos.ts"
   }
 }

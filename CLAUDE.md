@@ -28,6 +28,7 @@ Idioma: tudo em português do Brasil (código de domínio, mensagens, commits). 
 
 13. **Preço do cliente** nunca é editado: reajuste encerra a vigência anterior na véspera e abre outra (o banco impede sobreposição e alteração). Só o Administrativo reajusta; o Gerente cadastra o primeiro.
 14. **Conta que aparece na fatura**: qualquer mudança nos dados bancários, na chave PIX ou na visibilidade exige confirmação do Administrativo com senha; o pedido do Gerente fica pendente e a conta não muda até a aprovação.
+15. **Laudo**: o preço do dia, o valor cobrado e os custos ficam gravados no laudo. Valor diferente da tabela só Gerente/Administrativo, com motivo; sem preço cadastrado vale o valor digitado e o laudo entra na fila de revisão. Vistoriador lança só o dia atual e só como ele mesmo. Cancelar = pedido (Vistoriador) + autorização (Gerente/Administrativo, nunca o próprio autor). Margem e custos só com `relatorio.margem`.
 
 ## Estado
-Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Cadastros (banco, API e telas) concluídos. Próximo: lançamento de laudos. Ver `docs/04-roadmap.md`.
+Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Cadastros e Laudos (banco, API e telas) concluídos. Próximo: contas a receber (o título nasce do laudo; hoje o laudo ainda não gera título). Ver `docs/04-roadmap.md`.
