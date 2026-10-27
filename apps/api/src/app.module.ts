@@ -13,10 +13,16 @@ import { TemaController } from './tema/tema.controller';
 import { TemaService } from './tema/tema.service';
 import { AuditoriaController } from './auditoria/auditoria.controller';
 import { HealthController } from './health/health.controller';
+import { Tentativas } from './common/tentativas';
+import { BoAuthController } from './backoffice/bo-auth.controller';
+import { BoController } from './backoffice/bo.controller';
+import { BoAuthService } from './backoffice/bo-auth.service';
+import { BoService } from './backoffice/bo.service';
+import { BoGuard } from './backoffice/bo.guard';
 
 @Module({
   imports: [DbModule, MailModule],
-  controllers: [AuthController, EmpresasController, UsuariosController, TemaController, AuditoriaController, HealthController],
-  providers: [AuthService, EmpresasService, UsuariosService, TemaService, { provide: APP_GUARD, useClass: AcessoGuard }],
+  controllers: [BoAuthController, BoController, AuthController, EmpresasController, UsuariosController, TemaController, AuditoriaController, HealthController],
+  providers: [Tentativas, BoAuthService, BoService, BoGuard, AuthService, EmpresasService, UsuariosService, TemaService, { provide: APP_GUARD, useClass: AcessoGuard }],
 })
 export class AppModule {}

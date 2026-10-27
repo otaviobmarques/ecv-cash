@@ -5,3 +5,5 @@ export * from './juros';
 export * from './contraste';
 export * from './documentos';
 export * from './schemas';
+export * from './interno';
+export * from './schemas-interno';

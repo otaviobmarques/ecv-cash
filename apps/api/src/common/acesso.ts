@@ -15,6 +15,8 @@ export interface Acesso {
   empresaAtivaId: string | null;
   ip?: string;
   userAgent?: string;
+  /** presente quando é um acesso de suporte ("entrar como"): toda ação grava também quem é da equipe interna */
+  suporte?: { id: string; usuarioInternoId: string; usuarioInterno: string; motivo: string; expiraEm: string };
 }
 
 export const contextoDb = (a: Acesso): ContextoDb => ({

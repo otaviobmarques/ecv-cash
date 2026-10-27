@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Get, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Inject } from '@nestjs/common';
-import { aceitarConviteSchema, escolherEmpresaSchema, loginSchema, permissoesDoPerfil } from '@ecv/shared';
+import { aceitarConviteSchema, escolherEmpresaSchema, loginSchema, permissoesDoPerfil, trocarTicketSuporteSchema } from '@ecv/shared';
 import { AuthService } from './auth.service';
 import { COOKIE } from './acesso.guard';
 import { AcessoAtual, Publico } from '../common/decorators';
@@ -15,6 +15,7 @@ function usuarioDto(a: Acesso) {
     id: a.usuarioId, nome: a.nome, email: a.email, rede: a.rede,
     empresas: a.empresas, empresaAtivaId: a.empresaAtivaId,
     perfilAtivo: perfil, permissoes: perfil ? permissoesDoPerfil(perfil) : [],
+    suporte: a.suporte ? { usuarioInterno: a.suporte.usuarioInterno, motivo: a.suporte.motivo, expiraEm: a.suporte.expiraEm } : null,
   };
 }
 
@@ -29,6 +30,14 @@ export class AuthController {
     res.cookie(COOKIE, r.token, {
       httpOnly: true, sameSite: 'lax', secure: this.env.NODE_ENV === 'production', path: '/', expires: r.expiraEm,
     });
+    return usuarioDto(r.acesso);
+  }
+
+  @Publico() @Post('suporte') @HttpCode(200)
+  async suporte(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const { ticket } = validar(trocarTicketSuporteSchema, body);
+    const r = await this.auth.trocarTicketSuporte(ticket, req.ip, req.headers['user-agent']);
+    res.cookie(COOKIE, r.token, { httpOnly: true, sameSite: 'lax', secure: this.env.NODE_ENV === 'production', path: '/', expires: r.expiraEm });
     return usuarioDto(r.acesso);
   }
 
