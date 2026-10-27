@@ -1,0 +1,26 @@
+# ECV Cash: instruções para quem desenvolve (humano ou Claude)
+
+Produto: financeiro SaaS multiempresa para ECVs. Leia `docs/00-decisoes-de-produto.md` antes de mudar regra de negócio.
+Idioma: tudo em português do Brasil (código de domínio, mensagens, commits). Moeda BRL, datas dd/mm/aaaa na tela.
+
+## Comandos
+- `pnpm test` (shared + API, precisa do PostgreSQL local, ver README) · `pnpm typecheck` · `pnpm build`
+- Migração nova: arquivo `apps/api/db/migrations/NNNN_descricao.sql`, numerado em sequência. Nunca editar uma migração já aplicada.
+
+## Regras que não se quebram
+1. **Dinheiro em centavos inteiros** (`number`), percentuais em pontos-base. Nunca float. Use `@ecv/shared` (`dinheiro.ts`, `juros.ts`).
+2. **Isolamento por grupo é do banco (RLS)**, não da aplicação. Toda tabela de negócio leva `grupo_id`, FKs compostas `(id, grupo_id)`,
+   RLS ligada e FORÇADA. Todo acesso a dados passa por `DbService.tenant(ctx, fn)`. Tabela nova sem política RLS não entra.
+   A aplicação roda como `ecv_app` (sem BYPASSRLS). Teste de isolamento obrigatório para tabela nova (`test/isolamento-banco.test.ts`).
+3. **Nada é excluído.** Cancelamento e estorno com motivo; registros de baixa e pagamento são imutáveis (estorno = registro contrário).
+   `ecv_app` não tem DELETE em tabela de negócio.
+4. **Auditoria na mesma transação** da alteração (`common/auditoria.ts`): quem, o quê, antes/depois, motivo. `auditoria_log` é só inserção.
+5. **Permissões** vivem em `packages/shared/src/permissoes.ts` (matriz da Etapa 5). Rota sensível usa `@Requer(...)` e o serviço
+   confere a loja (`exigir(acesso, perm, empresaId)`). Esconder item de menu não é proteção.
+6. **Snapshots**: laudo grava preço de tabela, preço cobrado, desconto, custos e comissão no momento do lançamento. Reajuste futuro não reescreve o passado.
+7. **Sem emissão fiscal nem boleto** no MVP. Só campos de referência (nº NF, nº boleto) e QR Code PIX estático.
+8. Interface: tokens do Design System ECV Cash (ver `docs/00-decisoes-de-produto.md`, seção Marca). Estado nunca só por cor: ícone e texto.
+9. Mensagens de erro ao usuário: o que houve e como corrigir, sem vazar detalhe interno.
+
+## Estado
+Fundação concluída. Ver `docs/04-roadmap.md` para o próximo módulo.

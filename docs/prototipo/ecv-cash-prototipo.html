@@ -1,0 +1,695 @@
+<title>ECV Cash Protótipo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+/* Layout: app de gestão com menu lateral por perfil, topo com empresa ativa; tabelas em largura total, formulários em até 1200px.
+   Tema único (marfim do Design System ECV Cash); a cor da marca do cliente entra por --brand. */
+:root{
+  --marfim:#F7F8F2; --branco:#FFFFFF; --verde:#104B3A; --esm:#008B49; --claro:#80BC43;
+  --texto:#18382E; --texto2:#52675F; --borda:#D9E0D8; --suave:#EAF3EC; --erro:#B42318; --aviso:#805600; --foco:#005FCC;
+  --brand:#104B3A; --brand-hover:#0B3A2C; --brand-ink:#FFFFFF;
+  --s1:#008B49; --s2:#2F6FD0; --s3:#C47A00; --s4:#9A5BC0; --s5:#D1462F;
+  --fonte:"DejaVu Sans",Verdana,Geneva,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--marfim);color:var(--texto);font-family:var(--fonte);font-size:14px;line-height:1.5;margin:0}
+h1,h2,h3,p{margin:0}
+h1{font-size:28px;line-height:36px;color:var(--verde);text-wrap:balance}
+h2{font-size:18px;line-height:26px;color:var(--verde)}
+h3{font-size:14px;color:var(--verde)}
+.mut{color:var(--texto2)} .sm{font-size:12px;line-height:18px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--foco);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+.proto{background:#FFF6DC;border-bottom:1px solid #E7D49A;color:#5C4300;font-size:12px;padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.proto select{height:32px;border:1px solid #C9B676;border-radius:8px;background:#fff;padding:0 8px}
+.proto b{font-weight:700}
+.imp{background:#104B3A;color:#fff;font-size:13px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.imp button{background:#fff;color:#104B3A;border:0;border-radius:8px;height:32px;padding:0 12px;font-weight:700;cursor:pointer}
+
+.shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:calc(100vh - 80px)}
+.side{background:var(--branco);border-right:1px solid var(--borda);padding:20px 12px;display:flex;flex-direction:column;gap:4px}
+.logo{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;font-weight:700;color:var(--verde);font-size:18px}
+.logo i{width:36px;height:36px;border-radius:50%;background:var(--brand);display:grid;place-items:center;color:var(--brand-ink);font-style:normal;font-size:13px}
+.logo small{display:block;font-weight:400;font-size:11px;color:var(--texto2)}
+.nav a{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;color:var(--texto);text-decoration:none;font-weight:700;font-size:14px}
+.nav a:hover{background:var(--suave)}
+.nav a[aria-current=page]{background:var(--brand);color:var(--brand-ink)}
+.nav svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side .foot{margin-top:auto;padding:16px 8px 0;border-top:1px solid var(--borda);display:flex;flex-direction:column;gap:10px}
+.side .foot img{width:112px;display:block}
+.side .foot a{color:var(--texto2);font-size:12px}
+.mainwrap{min-width:0;display:flex;flex-direction:column}
+.top{background:var(--branco);border-bottom:1px solid var(--borda);padding:10px max(24px,env(safe-area-inset-right,0px)) 10px max(24px,env(safe-area-inset-left,0px));display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.top label{font-size:11px;color:var(--texto2);display:block}
+.top select{height:40px;border:1px solid var(--borda);border-radius:8px;padding:0 10px;background:#fff;min-width:200px;font-weight:700}
+.user{display:flex;gap:10px;align-items:center;font-size:13px}
+.user b{display:block}
+.av{width:36px;height:36px;border-radius:50%;background:var(--suave);color:var(--verde);display:grid;place-items:center;font-weight:700}
+main{padding:28px max(24px,env(safe-area-inset-right,0px)) 40px max(24px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:24px;min-width:0}
+.narrow{max-width:1200px;width:100%}
+.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.head p{max-width:64ch}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.card{background:var(--branco);border-radius:16px;padding:20px;min-width:0}
+.card.line{border:1px solid var(--borda)}
+.grid{display:grid;gap:16px;min-width:0}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g3{grid-template-columns:repeat(3,minmax(0,1fr))} .g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.g21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)} .g12{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.kpi .l{font-size:12px;color:var(--texto2)} .kpi .v{font-size:21px;line-height:30px;font-weight:700;color:var(--verde);font-variant-numeric:tabular-nums} .kpi .d{font-size:12px;color:var(--texto2)}
+
+.btn{min-height:48px;padding:0 20px;border-radius:12px;border:1.5px solid var(--brand);background:var(--brand);color:var(--brand-ink);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:hover{background:var(--brand-hover)}
+.btn.sec{background:#fff;color:var(--verde);border-color:var(--verde)} .btn.sec:hover{background:var(--suave)}
+.btn.sm2{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn[disabled]{background:#D9E0DA;border-color:#D9E0DA;color:var(--texto2);cursor:not-allowed}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fld>label{font-weight:700;color:var(--verde);font-size:13px}
+.fld input,.fld select,.fld textarea{min-height:48px;border:1.5px solid #8EA097;border-radius:8px;padding:0 12px;background:#fff;width:100%}
+.fld textarea{padding:10px 12px;min-height:72px}
+.fld input.bad{border-color:var(--erro)}
+.fld small{font-size:12px;color:var(--texto2)}
+.msg{display:flex;gap:10px;border-radius:12px;padding:12px 14px;font-size:13px;line-height:20px}
+.msg.warn{background:#FFF3D9;color:#5C4300;border:1px solid #E6CF90}
+.msg.err{background:#FBE9E7;color:#8A1B10;border:1px solid #E8B4AD}
+.msg.ok{background:var(--suave);color:#0B3A2C;border:1px solid #BCD9C4}
+.msg.info{background:#EAF1FB;color:#0E3A75;border:1px solid #B9CEEC}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;border:1px solid transparent}
+.p-ok{background:#E3F1E7;color:#0B3A2C} .p-open{background:#F0F2EF;color:var(--texto);border-color:var(--borda)}
+.p-par{background:#FFF1D6;color:var(--aviso)} .p-venc{background:#FBE4E1;color:var(--erro)} .p-info{background:#E8F0FB;color:#0E3A75}
+
+.tw{overflow-x:auto;border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--texto2);padding:10px 12px;border-bottom:1.5px solid var(--borda);white-space:nowrap;background:#fff}
+td{padding:11px 12px;border-bottom:1px solid #E8EDE6;vertical-align:middle}
+tr.sel td{background:var(--suave)}
+tbody tr:hover td{background:#F4F8F3}
+tfoot td{font-weight:700;border-top:1.5px solid var(--borda);border-bottom:0}
+td input[type=checkbox],th input[type=checkbox]{width:20px;height:20px;accent-color:var(--verde)}
+.tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--borda);flex-wrap:wrap}
+.tabs button{background:none;border:0;padding:12px 16px;font-weight:700;color:var(--texto2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1.5px}
+.tabs button[aria-selected=true]{color:var(--verde);border-bottom-color:var(--brand)}
+.chip{border:1.5px solid var(--borda);background:#fff;border-radius:999px;min-height:36px;padding:0 14px;font-weight:700;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--verde);color:#fff;border-color:var(--verde)}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:128px minmax(0,1fr) 104px;gap:10px;align-items:center;font-size:13px}
+.bar .t{height:16px;background:#EEF2EC;border-radius:4px 8px 8px 4px;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--verde);border-radius:0 8px 8px 0}
+.bar .vv{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.lg{display:flex;gap:16px;font-size:12px;color:var(--texto2);flex-wrap:wrap}
+.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:#18382E;color:#fff;font-size:12px;padding:8px 10px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
+svg text{font-family:var(--fonte)}
+.sw{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:16px}
+.list-i{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--borda);background:#fff;cursor:pointer;text-align:left;width:100%}
+.list-i[aria-pressed=true]{border-color:var(--verde);background:var(--suave)}
+.doc{background:#fff;border:1px solid var(--borda);border-radius:8px;padding:28px;box-shadow:0 1px 3px rgba(24,56,46,.12);max-width:640px}
+.doc .lh{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid var(--brand);padding-bottom:14px;margin-bottom:14px}
+.lbox{width:120px;height:44px;border:1.5px dashed #8EA097;border-radius:6px;display:grid;place-items:center;font-size:10px;color:var(--texto2);text-align:center;overflow:hidden;background:#fff}
+.lbox img{max-width:100%;max-height:100%}
+.ov{position:fixed;inset:0;background:rgba(16,40,32,.45);z-index:50;display:flex;justify-content:flex-end}
+.ov.c{justify-content:center;align-items:center}
+.dr{background:#fff;width:min(460px,100%);height:100%;padding:24px max(24px,env(safe-area-inset-right,0px)) 24px 24px;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.md{background:#fff;width:min(480px,calc(100% - 32px));border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--verde);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;z-index:99;display:none;max-width:calc(100% - 32px)}
+.act{position:sticky;bottom:12px;background:var(--verde);color:#fff;border-radius:16px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.act .btn{background:#fff;color:var(--verde);border-color:#fff}
+.lock{display:inline-flex;gap:6px;align-items:center;color:var(--texto2);font-size:12px}
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login .card{width:min(420px,100%);display:flex;flex-direction:column;gap:16px;padding:32px}
+.bo-top{background:#fff;border-bottom:3px solid var(--verde);padding:12px max(24px,env(safe-area-inset-right,0px)) 12px max(24px,env(safe-area-inset-left,0px));display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+@media (max-width:1100px){.g5{grid-template-columns:repeat(2,minmax(0,1fr))}.g21,.g12,.sw,.g3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{flex-direction:row;overflow-x:auto;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));border-right:0;border-bottom:1px solid var(--borda)}
+  .logo,.side .foot{display:none}.nav{display:flex;gap:4px}.nav a{white-space:nowrap}
+  .g2{grid-template-columns:minmax(0,1fr)}.bar{grid-template-columns:96px minmax(0,1fr) 72px}
+}
+@media (prefers-reduced-motion:no-preference){.ov .dr{animation:sl .18s ease-out}@keyframes sl{from{transform:translateX(24px);opacity:.6}}}
+</style>
+<div id="app"></div>
+<div id="ovl"></div>
+<div id="toast" role="status"></div>
+<script>
+const REDBOX="data:image/png;base64,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";
+const HOJE="2026-10-27";
+const R=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const N=v=>v.toLocaleString('pt-BR');
+const D=iso=>iso.split('-').reverse().join('/');
+const dias=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
+const ICON={
+ dash:'<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
+ laudo:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M9 13l2 2 4-4"/>',
+ receber:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8.5 12.5L12 16l3.5-3.5"/>',
+ fatura:'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+ pagar:'<circle cx="12" cy="12" r="9"/><path d="M12 16V8M8.5 11.5L12 8l3.5 3.5"/>',
+ caixa:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',
+ users:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.4 0 4 1.5 4.5 4.3"/>',
+ rel:'<path d="M4 20V4M4 20h16"/><rect x="8" y="11" width="3" height="6"/><rect x="14" y="7" width="3" height="10"/>',
+ cad:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+ forn:'<path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/><path d="M4 21h16"/>',
+ tema:'<path d="M12 3c3 4 6 6.8 6 10.5A6 6 0 0 1 6 13.5C6 9.8 9 7 12 3z"/>'
+};
+const ic=n=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+const ROLES={ADM:'Administrativo (rede)',GER:'Gerente',FIN:'Financeiro',VIS:'Vistoriador'};
+const MENU=[
+ {id:'dashboard',l:'Painel',i:'dash',r:['ADM','GER','FIN']},
+ {id:'laudo',l:'Lançar laudo',i:'laudo',r:['ADM','GER','VIS']},
+ {id:'receber',l:'A receber',i:'receber',r:['ADM','GER','FIN']},
+ {id:'faturados',l:'Faturados',i:'fatura',r:['ADM','GER','FIN']},
+ {id:'pagar',l:'A pagar',i:'pagar',r:['ADM','GER','FIN']},
+ {id:'caixa',l:'Caixa',i:'caixa',r:['ADM','GER','FIN']},
+ {id:'clientes',l:'Clientes e preços',i:'users',r:['ADM','GER','FIN']},
+ {id:'cadastros',l:'Cadastros',i:'cad',r:['ADM','GER','FIN']},
+ {id:'fornecedores',l:'Fornecedores',i:'forn',r:['ADM','GER','FIN']},
+ {id:'relatorios',l:'Relatórios',i:'rel',r:['ADM','GER','FIN']},
+ {id:'aparencia',l:'Aparência',i:'tema',r:['ADM','GER']}
+];
+const S={role:'ADM',emp:'rede',sel:new Set(),selF:new Set(),fat:null,cli:'Auto Center Premium',tab:{laudo:'unico',rel:'oper',dre:'comp'},imp:null,
+  brand:{cor:'#104B3A',escopo:'Grupo',logo:null},mes:'2026-10',ff:{cli:'Todos',por:'venc',de:'',ate:'',st:'Todas'}};
+
+/* ---------- dados de exemplo ---------- */
+const EMP={rede:{n:'Rede (consolidado)',lau:1912,fat:482350,aberto:96480,venc:32800},
+ centro:{n:'Loja Centro',lau:612,fat:158200,aberto:31200,venc:11900,v:[['Ana Souza',322],['João Silva',290]]},
+ norte:{n:'Loja Norte',lau:498,fat:124900,aberto:27600,venc:9800,v:[['Marcos Lima',288],['Carla Dias',210]]},
+ sul:{n:'Loja Sul',lau:455,fat:111450,aberto:22180,venc:6700,v:[['Paulo Reis',251],['Rafael Melo',204]]},
+ leste:{n:'Loja Leste',lau:347,fat:87800,aberto:15500,venc:4400,v:[['Bruno Costa',195],['Lúcia Pires',152]]}};
+const MESES=['Nov','Dez','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out'];
+const FATU=[391,402,372,415,428,440,436,452,461,470,476,482.35], RECE=[366,381,355,398,404,421,419,433,440,452,451,449];
+const CLIENTES={'Auto Center Premium':{'Cautelar':180,'Transferência':120,'Procedência':150},
+ 'Revenda Silva Veículos':{'Cautelar':165,'Transferência':110},
+ 'Particular (balcão)':{'Cautelar':220,'Transferência':150,'Procedência':190,'Outros':100},
+ 'Locadora Rota 66':{'Cautelar':170},'Transportadora Lima':{'Cautelar':175,'Transferência':115}};
+const SERV=['Cautelar','Transferência','Procedência','Outros'];
+const FORMAS=['Dinheiro','PIX','Cartão de débito','Cartão de crédito','Cheque','Faturado'];
+const VIST=['Ana Souza','João Silva'];
+let LAUDOS=[
+ {h:'16:42',placa:'RTX4F21',cliente:'Auto Center Premium',serv:'Cautelar',vist:'Ana Souza',forma:'Faturado',valor:180,manual:false},
+ {h:'15:58',placa:'KJH9A87',cliente:'Revenda Silva Veículos',serv:'Cautelar',vist:'João Silva',forma:'Faturado',valor:165,manual:false},
+ {h:'15:10',placa:'PLK8J31',cliente:'Particular (balcão)',serv:'Cautelar',vist:'Ana Souza',forma:'PIX',valor:220,manual:false},
+ {h:'14:25',placa:'BRA2E19',cliente:'Locadora Rota 66',serv:'Transferência',vist:'João Silva',forma:'Faturado',valor:140,manual:true}];
+const T=[
+ ['L-48103','HJK2B55','Transportadora Lima','Cautelar','2026-09-28','2026-10-10',175,175,'Faturado'],
+ ['L-48211','RTX4F21','Auto Center Premium','Cautelar','2026-10-03','2026-10-26',180,180,'Faturado'],
+ ['L-48215','QWE1R23','Auto Center Premium','Transferência','2026-10-04','2026-10-26',120,120,'Faturado'],
+ ['L-48230','KJH9A87','Revenda Silva Veículos','Cautelar','2026-10-07','2026-10-26',165,165,'Faturado'],
+ ['L-48302','BRA2E19','Locadora Rota 66','Cautelar','2026-10-10','2026-11-10',170,170,'Faturado'],
+ ['L-48310','FGT5H42','Auto Center Premium','Procedência','2026-10-11','2026-11-10',150,150,'Faturado'],
+ ['L-48377','MNB3C76','Revenda Silva Veículos','Transferência','2026-10-14','2026-11-10',110,50,'Faturado'],
+ ['L-48405','PLK8J31','Particular (balcão)','Cautelar','2026-10-16','2026-10-16',220,0,'PIX'],
+ ['L-48411','CDE4F90','Particular (balcão)','Procedência','2026-10-19','2026-10-19',190,0,'Cartão de crédito'],
+ ['L-48466','VBN7K12','Auto Center Premium','Cautelar','2026-10-22','2026-11-04',180,180,'Faturado'],
+ ['L-48490','ZXC8M64','Locadora Rota 66','Cautelar','2026-10-24','2026-11-10',170,170,'Faturado'],
+ ['L-48512','ASD1G37','Transportadora Lima','Transferência','2026-10-26','2026-11-10',115,115,'Faturado']
+].map((r,i)=>({id:i,laudo:r[0],placa:r[1],cliente:r[2],serv:r[3],comp:r[4],venc:r[5],valor:r[6],saldo:r[7],forma:r[8]}));
+const stT=t=>t.saldo===0?'ok':(t.venc<HOJE?'venc':(t.saldo<t.valor?'par':'open'));
+const PILL={ok:['p-ok','✓ Quitado'],open:['p-open','○ Em aberto'],par:['p-par','◐ Parcial'],venc:['p-venc','! Vencido']};
+const pill=k=>`<span class="pill ${PILL[k][0]}">${PILL[k][1]}</span>`;
+const FAT=[
+ {n:'F-2026-0391',cliente:'Transportadora Lima',per:'16/09 a 30/09 (quinzenal)',emi:'2026-10-01',venc:'2026-10-10',lau:38,valor:6460,saldo:4460},
+ {n:'F-2026-0398',cliente:'Auto Center Premium',per:'01/10 a 15/10 (quinzenal)',emi:'2026-10-16',venc:'2026-10-26',lau:46,valor:9180,saldo:9180},
+ {n:'F-2026-0399',cliente:'Revenda Silva Veículos',per:'01/10 a 15/10 (quinzenal)',emi:'2026-10-16',venc:'2026-10-26',lau:31,valor:4650,saldo:4650},
+ {n:'F-2026-0407',cliente:'Locadora Rota 66',per:'01/10 a 31/10 (mensal)',emi:'2026-10-27',venc:'2026-11-10',lau:58,valor:9860,saldo:9860},
+ {n:'F-2026-0409',cliente:'Auto Center Premium',per:'19/10 a 25/10 (semanal)',emi:'2026-10-26',venc:'2026-11-05',lau:22,valor:3960,saldo:3960}];
+const PAG=[
+ ['Aluguel – Loja Centro','Imobiliária Prado','Recorrência','2026-11-05',7800,'Aprovado'],
+ ['Royalties 5% – Out/2026','Franqueadora ECV','Royalty','2026-11-10',7910,'Aguardando aprovação'],
+ ['Comissões vistoriadores – 2ª quinz.','Equipe Centro','Comissão','2026-10-31',4180,'Aguardando aprovação'],
+ ['Taxas Detran – Out/2026','Detran','Custo de laudo','2026-11-05',6120,'Aprovado'],
+ ['Energia elétrica','Companhia de Energia','Manual','2026-10-24',1260,'Aprovado'],
+ ['Internet e telefonia','Telecom Sul','Recorrência','2026-10-30',420,'Pago'],
+ ['Material de escritório','Papelaria Central','Manual','2026-11-12',380,'Aguardando aprovação'],
+ ['Rateio marketing regional','Agência Local','Rateio','2026-11-08',1850,'Aprovado']
+].map((r,i)=>({id:i,desc:r[0],forn:r[1],orig:r[2],venc:r[3],valor:r[4],st:r[5]}));
+let FORN=[['Imobiliária Prado','12.345.678/0001-10','Prestador','contato@prado.com.br','Despesas operacionais › Aluguel'],
+ ['Detran','—','Órgão público','—','Custos dos serviços › Taxas Detran'],
+ ['Papelaria Central','98.765.432/0001-55','Fornecedor','vendas@papelariacentral.com.br','Despesas operacionais › Administrativas'],
+ ['Companhia de Energia','11.222.333/0001-44','Concessionária','—','Despesas operacionais › Utilidades'],
+ ['Telecom Sul','55.666.777/0001-88','Prestador','—','Despesas operacionais › Utilidades'],
+ ['Franqueadora ECV','22.333.444/0001-66','Franqueador','financeiro@franqueadora.com.br','Despesas operacionais › Royalties'],
+ ['Agência Local','33.444.555/0001-77','Prestador','—','Despesas operacionais › Marketing']];
+const PLANO=['Despesas operacionais › Aluguel','Despesas operacionais › Utilidades','Despesas operacionais › Administrativas','Despesas operacionais › Marketing','Despesas operacionais › Royalties','Custos dos serviços › Taxas Detran','Despesas financeiras › Taxas de cartão'];
+let DRAFT={};
+const SERVS=[['Cautelar','CAU','Receitas › Cautelar',[['Taxa Detran','R$',38,'Sim'],['Tarifa do sistema de laudo','R$',6,'Não']],true],['Transferência','TRF','Receitas › Transferência',[['Taxa Detran','R$',38,'Sim']],true],['Procedência','PRO','Receitas › Procedência',[['Taxa Detran','R$',38,'Sim']],true],['Outros','OUT','Receitas › Outros serviços',[],true]];
+const VISTS=[['Ana Souza','***.482.***-10',['Loja Centro'],'Sim','8%'],['João Silva','***.771.***-52',['Loja Centro','Loja Norte'],'Sim','8%'],['Marcos Lima','***.305.***-77',['Loja Norte'],'Sim','—'],['Carla Dias','***.918.***-03',['Loja Norte'],'Não','—']];
+const FPGS=[['Dinheiro','Dinheiro','Não','—'],['PIX','PIX','Não','—'],['Cartão de débito','Cartão de débito','Não','1,19% · recebe em D+1'],['Cartão de crédito','Cartão de crédito','Não','2,69% · D+30 · antecipação 1,80%'],['Cheque','Cheque','Não','—'],['Faturado','Faturado','Sim','—']];
+const USERS=[['Marina Alves','marina@redevistoriasul.com.br','Administrativo','Todas as lojas','Sim'],['Rafael Costa','rafael@lojacentro.com.br','Gerente','Loja Centro','Sim'],['Juliana Prado','juliana@lojacentro.com.br','Financeiro','Loja Centro','Não'],['Ana Souza','ana@lojacentro.com.br','Vistoriador','Loja Centro','Não']];
+const EMPS=[['Loja Centro','12.345.678/0001-90','SP','Simples Nacional'],['Loja Norte','12.345.678/0002-71','SP','Simples Nacional'],['Loja Sul','12.345.678/0003-52','SP','Lucro Presumido'],['Loja Leste','12.345.678/0004-33','SP','Simples Nacional']];
+const PLT=[['1','Receitas',0],['1.1','Cautelar',1],['1.2','Transferência',1],['1.3','Procedência',1],['1.4','Outros serviços',1],['2','Deduções',0],['2.1','ISS',1],['3','Custos dos serviços',0],['3.1','Taxas Detran',1],['3.2','Comissões de vistoriadores',1],['4','Despesas operacionais',0],['4.1','Pessoal',1],['4.2','Aluguel',1],['4.3','Utilidades',1],['4.4','Royalties e fundo de marketing',1],['4.5','Administrativas',1],['4.6','Marketing',1],['5','Despesas financeiras',0],['5.1','Taxas de cartão e antecipação',1]];
+const LOJAS=['Loja Centro','Loja Norte','Loja Sul','Loja Leste'];
+const BANK={'Loja Centro':[{banco:'Itaú (341)',ag:'1234',cc:'12345-6',tipo:'Corrente',titular:'Centro Vistorias Veiculares Ltda',doc:'12.345.678/0001-90',pixT:'CNPJ',pix:'12.345.678/0001-90',fatura:true},{banco:'Caixa Econômica (104)',ag:'0987',cc:'00112233-4',tipo:'Corrente',titular:'Centro Vistorias Veiculares Ltda',doc:'12.345.678/0001-90',pixT:'',pix:'',fatura:false}],
+ 'Loja Norte':[{banco:'Bradesco (237)',ag:'4521',cc:'778899-0',tipo:'Corrente',titular:'Norte Vistorias Veiculares Ltda',doc:'12.345.678/0002-71',pixT:'E-mail',pix:'financeiro@lojanorte.com.br',fatura:true}],
+ 'Loja Sul':[{banco:'Banco do Brasil (001)',ag:'3310',cc:'55667-8',tipo:'Corrente',titular:'Sul Vistorias Veiculares Ltda',doc:'12.345.678/0003-52',pixT:'CNPJ',pix:'12.345.678/0003-52',fatura:true}],
+ 'Loja Leste':[]};
+const BANCOS=['Itaú (341)','Bradesco (237)','Banco do Brasil (001)','Caixa Econômica (104)','Santander (033)','Sicoob (756)','Sicredi (748)','Nubank (260)','Inter (077)','Outro'];
+function crc16(t){let c=0xFFFF;for(let i=0;i<t.length;i++){c^=t.charCodeAt(i)<<8;for(let j=0;j<8;j++){c=(c&0x8000)?((c<<1)^0x1021):(c<<1);c&=0xFFFF}}return c.toString(16).toUpperCase().padStart(4,'0')}
+const tlv=(i,v)=>i+String(v.length).padStart(2,'0')+v;
+function pixPayload(c,valor,txid){const dg=c.pix.replace(/\D/g,''),key=c.pixT==='CNPJ'||c.pixT==='CPF'?dg:c.pixT==='Telefone'?'+55'+dg:c.pix;
+ const nome=c.titular.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9 ]/g,'').slice(0,25).trim();
+ const b=tlv('00','01')+tlv('01','11')+tlv('26',tlv('00','br.gov.bcb.pix')+tlv('01',key))+tlv('52','0000')+tlv('53','986')+tlv('54',valor.toFixed(2))+tlv('58','BR')+tlv('59',nome)+tlv('60','SAO PAULO')+tlv('62',tlv('05',txid.replace(/[^A-Za-z0-9]/g,'').slice(0,25)))+'6304';
+ return b+crc16(b)}
+function qrSvg(t){try{if(typeof qrcode==='undefined')return '';const q=qrcode(0,'M');q.addData(t);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}catch(e){return ''}}
+const NOME={ADM:'Marina Alves',GER:'Rafael Costa',FIN:'Juliana Prado',VIS:'Ana Souza'};
+let LOGC=[['20/10/2026 09:14','Marina Alves','Loja Centro','Conta Itaú (341) marcada para aparecer na fatura'],['03/09/2026 16:40','Marina Alves','Loja Norte','Conta Bradesco (237) cadastrada']];
+const contasFatura=e=>(BANK[e]||[]).filter(c=>c.fatura);
+const canConta=e=>S.role==='ADM'||(S.role==='GER'&&e==='Loja Centro');
+let GRUPOS=[['Rede Vistoria Sul',4,12,'Ativo','12/03/2026'],['Grupo Alfa ECV',2,5,'Ativo','04/06/2026'],['Rede Norte Laudos',3,9,'Ativo','19/08/2026'],['Franquia Beta',1,3,'Suspenso','30/09/2026']];
+
+/* ---------- utilidades de UI ---------- */
+const $=s=>document.querySelector(s);
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2800)}
+function modal(html,drawer){$('#ovl').innerHTML=`<div class="ov ${drawer?'':'c'}" data-a="fechar-bg">${drawer?'<div class="dr">':'<div class="md">'}${html}</div></div>`}
+function fechar(){$('#ovl').innerHTML=''}
+const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+const lum=h=>{const [r,g,b]=rgb(h).map(c=>c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4));return .2126*r+.7152*g+.0722*b};
+const cr=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const shade=(h,f)=>'#'+rgb(h).map(c=>Math.round(Math.max(0,Math.min(1,c*f))*255).toString(16).padStart(2,'0')).join('');
+function applyBrand(){const c=S.brand.cor,w=cr(c,'#FFFFFF')>=4.5;const root=document.documentElement.style;
+ root.setProperty('--brand',c);root.setProperty('--brand-hover',shade(c,.78));root.setProperty('--brand-ink',w?'#FFFFFF':'#18382E')}
+const can=a=>({
+ aprovar:['ADM','GER'],reajustar:['ADM'],desconto:['ADM','GER'],cancelar:['ADM','GER'],tema:['ADM','GER'],estornar:['ADM','GER','FIN'],dre:['ADM','GER']}[a]||[]).includes(S.role);
+const empList=()=>S.role==='ADM'?['rede','centro','norte','sul','leste']:['centro'];
+const shareE=()=>EMP[S.emp].fat/EMP.rede.fat;
+
+/* ---------- gráficos ---------- */
+function lineChart(){
+  const sh=shareE(),W=640,H=250,L=54,Rr=16,Tp=14,B=30,w=W-L-Rr,h=H-Tp-B;
+  const a=FATU.map(v=>v*sh),b=RECE.map(v=>v*sh),max=Math.ceil(Math.max(...a)/100)*100;
+  const x=i=>L+w*i/11,y=v=>Tp+h-(v/max)*h;
+  const pth=s=>s.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  let g='';for(let k=0;k<=4;k++){const v=max*k/4;g+=`<line x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}" stroke="#E4EAE3"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#52675F">${Math.round(v)}k</text>`}
+  const xl=MESES.map((m,i)=>`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#52675F">${m}</text>`).join('');
+  const area=pth(a)+` L${x(11)} ${y(0)} L${x(0)} ${y(0)} Z`;
+  return `<div class="chart" id="lc"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evolução mensal de faturado e recebido, em milhares de reais">${g}${xl}
+   <path d="${area}" fill="#008B49" fill-opacity=".08"/><path d="${pth(a)}" fill="none" stroke="#008B49" stroke-width="2" stroke-linejoin="round"/>
+   <path d="${pth(b)}" fill="none" stroke="#2F6FD0" stroke-width="2" stroke-linejoin="round"/>
+   <circle cx="${x(11)}" cy="${y(a[11])}" r="4.5" fill="#008B49" stroke="#fff" stroke-width="2"/><circle cx="${x(11)}" cy="${y(b[11])}" r="4.5" fill="#2F6FD0" stroke="#fff" stroke-width="2"/>
+   <text x="${x(11)-8}" y="${y(a[11])-10}" text-anchor="end" font-size="11" font-weight="700" fill="#18382E">Faturado</text>
+   <text x="${x(11)-8}" y="${y(b[11])+20}" text-anchor="end" font-size="11" font-weight="700" fill="#18382E">Recebido</text>
+   <line id="lcx" y1="${Tp}" y2="${Tp+h}" stroke="#18382E" stroke-dasharray="3 3" style="display:none"/>
+   <rect id="lch" x="${L}" y="${Tp}" width="${w}" height="${h}" fill="transparent"/></svg><div class="tip" id="lct"></div></div>
+   <div class="lg"><span><i style="background:#008B49"></i>Faturado (competência)</span><span><i style="background:#2F6FD0"></i>Recebido (caixa)</span></div>`;
+}
+function initLine(){const r=$('#lch');if(!r)return;const sh=shareE(),svg=r.ownerSVGElement,W=640,L=54,w=W-L-16;
+  const a=FATU.map(v=>v*sh),b=RECE.map(v=>v*sh);
+  r.onmousemove=e=>{const p=svg.getBoundingClientRect(),px=(e.clientX-p.left)*W/p.width,i=Math.max(0,Math.min(11,Math.round((px-L)/w*11))),xx=L+w*i/11;
+    const l=$('#lcx');l.setAttribute('x1',xx);l.setAttribute('x2',xx);l.style.display='';
+    const t=$('#lct');t.style.display='block';t.innerHTML=`<b>${MESES[i]}</b><br>Faturado: ${R(a[i]*1000)}<br>Recebido: ${R(b[i]*1000)}`;
+    t.style.left=Math.min(xx/W*p.width+12,p.width-170)+'px';t.style.top='8px'};
+  r.onmouseleave=()=>{$('#lcx').style.display='none';$('#lct').style.display='none'}}
+function bars(rows,fmt){const m=Math.max(...rows.map(r=>r[1]));
+  return `<div class="bars">${rows.map(r=>`<div class="bar" title="${r[0]}: ${fmt(r[1])}"><span>${r[0]}</span><span class="t"><i style="width:${r[1]/m*100}%"></i></span><span class="vv">${fmt(r[1])}</span></div>`).join('')}</div>`}
+
+/* ---------- telas ---------- */
+const V={};
+V.dashboard=()=>{const e=EMP[S.emp],tk=e.fat/e.lau,pct=e.venc/e.fat*100;
+ const porEmp=['centro','norte','sul','leste'].map(k=>[EMP[k].n,EMP[k].lau]);
+ const split=[.38,.34,.20,.08],srv=SERV.map((s,i)=>[s,Math.round(e.lau*split[i])]);srv[3][1]=e.lau-srv[0][1]-srv[1][1]-srv[2][1];
+ const vis=S.emp==='rede'?['centro','norte','sul','leste'].flatMap(k=>EMP[k].v):e.v;
+ const ag=[['1 a 15 dias',.46],['16 a 30 dias',.31],['31 a 60 dias',.17],['Mais de 60',.06]].map(a=>[a[0],Math.round(e.venc*a[1])]);ag[3][1]=e.venc-ag[0][1]-ag[1][1]-ag[2][1];
+ return `<div class="head"><div><h1>Painel</h1><p class="mut">${e.n} · Outubro/2026${S.role==='FIN'?' · visão financeira':''}</p></div>
+  <div class="row"><button class="chip" aria-pressed="true">Mês atual</button><button class="chip" aria-pressed="false">Trimestre</button><button class="chip" aria-pressed="false">12 meses</button></div></div>
+  <div class="grid g5">
+   <div class="card kpi"><div class="l">Faturamento</div><div class="v">${R(e.fat)}</div><div class="d">+1,3% vs. setembro</div></div>
+   <div class="card kpi"><div class="l">Laudos</div><div class="v">${N(e.lau)}</div><div class="d">${N(Math.round(e.lau/20))} por dia útil</div></div>
+   <div class="card kpi"><div class="l">Ticket médio</div><div class="v">${R(tk)}</div><div class="d">por laudo</div></div>
+   <div class="card kpi"><div class="l">A receber em aberto</div><div class="v">${R(e.aberto)}</div><div class="d">faturados e parciais</div></div>
+   <div class="card kpi"><div class="l">Inadimplência</div><div class="v">${pct.toFixed(1).replace('.',',')}%</div><div class="d">${R(e.venc)} vencidos</div></div></div>
+  <div class="grid g21"><div class="card"><h2>Evolução mensal</h2><p class="mut sm" style="margin-bottom:8px">Últimos 12 meses, em milhares de reais.</p>${lineChart()}</div>
+   <div class="card"><h2>Inadimplência por atraso</h2><p class="mut sm" style="margin-bottom:12px">Valores vencidos em aberto.</p>${bars(ag,R)}</div></div>
+  <div class="grid g3">
+   <div class="card"><h2>${S.emp==='rede'?'Laudos por empresa':'Laudos por serviço'}</h2><p class="mut sm" style="margin-bottom:12px">${N(e.lau)} laudos no mês.</p>${bars(S.emp==='rede'?porEmp:srv,N)}</div>
+   <div class="card"><h2>Laudos por vistoriador</h2><p class="mut sm" style="margin-bottom:12px">Ordenado por produção.</p>${bars([...vis].sort((a,b)=>b[1]-a[1]),N)}</div>
+   <div class="card"><h2>Faturamento por forma de pagamento</h2><p class="mut sm" style="margin-bottom:12px">Participação no mês.</p>${bars([['Faturado',Math.round(e.fat*.52)],['PIX',Math.round(e.fat*.22)],['Cartão de crédito',Math.round(e.fat*.12)],['Cartão de débito',Math.round(e.fat*.08)],['Dinheiro',Math.round(e.fat*.06)]],R)}</div></div>
+  <p class="mut sm">Dados de exemplo. Cada gráfico mostra o valor ao passar o mouse e tem versão em tabela nos relatórios.</p>`};
+
+const L={cliente:'Auto Center Premium',serv:'Cautelar',vist:'Ana Souza',forma:'Faturado',placa:'',desc:0,manual:'',num:'',obs:'',dup:false};
+const okPlaca=p=>/^[A-Z]{3}-?\d{4}$/.test(p)||/^[A-Z]{3}\d[A-Z]\d{2}$/.test(p);
+function preco(){const t=(CLIENTES[L.cliente]||{})[L.serv];return t}
+function laudoPanel(){const t=preco(),man=t===undefined,base=man?(parseFloat(String(L.manual).replace(',','.'))||0):t,d=can('desconto')?(parseFloat(String(L.desc).replace(',','.'))||0):0,tot=Math.max(0,base-d);
+ const dup=L.placa&&LAUDOS.some(x=>x.placa===L.placa.replace('-','')&&x.serv===L.serv);L.dup=!!dup;
+ const pm=L.placa&&!okPlaca(L.placa);
+ return {html:`${man?`<div class="msg warn" role="alert"><span aria-hidden="true">!</span><div><b>${L.cliente} não tem preço para ${L.serv}.</b><br>Digite o preço abaixo. O laudo fica marcado como “preço manual” e o gerente revisa depois.</div></div>
+   <div class="fld"><label for="f-man">Preço manual (R$) *</label><input id="f-man" data-in="manual" inputmode="decimal" value="${L.manual}" placeholder="0,00"></div>`
+   :`<div class="msg ok"><span aria-hidden="true">✓</span><div>Preço da tabela do cliente: <b>${R(t)}</b> · vigente desde 01/09/2026</div></div>`}
+   ${can('desconto')?`<div class="fld"><label for="f-desc">Desconto (R$)</label><input id="f-desc" data-in="desc" inputmode="decimal" value="${L.desc}"><small>Exige motivo e fica no histórico.</small></div>`:''}
+   ${dup?`<div class="msg warn" role="alert"><span aria-hidden="true">!</span><div><b>Possível duplicidade.</b> Já existe laudo de ${L.serv} para a placa ${L.placa} hoje. ${can('desconto')?'Você pode lançar mesmo assim, com motivo.':'Peça ao gerente para liberar.'}</div></div>`:''}
+   <div class="card" style="background:var(--suave)"><div class="mut sm">Valor a cobrar</div><div style="font-size:28px;font-weight:700;color:var(--verde)" class="num" style="text-align:left">${R(tot)}</div></div>`,tot,man,dup,pm}}
+V.laudo=()=>{const vo=S.role==='VIS'?['Ana Souza']:VIST,p=laudoPanel(),tab=S.tab.laudo;
+ if(S.role==='VIS')L.vist='Ana Souza';
+ const opt=(a,v)=>a.map(x=>`<option${x===v?' selected':''}>${x}</option>`).join('');
+ const form=`<div class="grid g2"><div class="fld"><label for="f-data">Data *</label><input id="f-data" value="27/10/2026" readonly></div>
+   <div class="fld"><label for="f-placa">Placa *</label><input id="f-placa" data-in="placa" maxlength="8" value="${L.placa}" placeholder="ABC1D23 ou ABC-1234" autocomplete="off" class="${p.pm?'bad':''}"><small id="placa-m" style="${p.pm?'color:var(--erro)':''}">${p.pm?'Placa inválida. Confira as letras e os números.':'Aceita placa antiga e Mercosul.'}</small></div>
+   <div class="fld"><label for="f-cli">Cliente *</label><select id="f-cli" data-in="cliente">${opt(Object.keys(CLIENTES),L.cliente)}</select></div>
+   <div class="fld"><label for="f-srv">Serviço *</label><select id="f-srv" data-in="serv">${opt(SERV,L.serv)}</select></div>
+   <div class="fld"><label for="f-vis">Vistoriador *</label><select id="f-vis" data-in="vist"${S.role==='VIS'?' disabled':''}>${opt(vo,L.vist)}</select>${S.role==='VIS'?'<small>Preenchido com o seu cadastro.</small>':''}</div>
+   <div class="fld"><label for="f-for">Forma de pagamento *</label><select id="f-for" data-in="forma">${opt(FORMAS,L.forma)}</select></div>
+   <div class="fld"><label for="f-num">Nº do laudo</label><input id="f-num" data-in="num" value="${L.num}" placeholder="Opcional"></div>
+   <div class="fld"><label for="f-obs">Observação</label><input id="f-obs" data-in="obs" value="${L.obs}" placeholder="Opcional"></div></div>`;
+ const lote=`<div class="tw"><table><thead><tr><th>Placa</th><th>Cliente</th><th>Serviço</th><th>Forma</th><th class="num">Valor</th></tr></thead><tbody>${[0,1,2,3,4].map(i=>`<tr><td><input style="min-height:40px;width:110px;border:1.5px solid #8EA097;border-radius:8px;padding:0 8px" placeholder="ABC1D23" aria-label="Placa linha ${i+1}"></td>
+   <td><select data-lote="${i}" data-k="c" aria-label="Cliente linha ${i+1}" style="min-height:40px;border:1.5px solid #8EA097;border-radius:8px">${opt(Object.keys(CLIENTES),'Auto Center Premium')}</select></td>
+   <td><select data-lote="${i}" data-k="s" aria-label="Serviço linha ${i+1}" style="min-height:40px;border:1.5px solid #8EA097;border-radius:8px">${opt(SERV,'Cautelar')}</select></td>
+   <td><select aria-label="Forma linha ${i+1}" style="min-height:40px;border:1.5px solid #8EA097;border-radius:8px">${opt(FORMAS,'Faturado')}</select></td><td class="num" id="lv${i}">${R(180)}</td></tr>`).join('')}</tbody></table></div>
+   <div class="row" style="justify-content:space-between"><p class="mut sm">Linhas em branco são ignoradas. Cliente sem preço fica em amarelo e pede valor.</p><button class="btn" data-a="lote">Lançar laudos do lote</button></div>`;
+ return `<div class="head"><div><h1>Lançar laudo</h1><p class="mut">${EMP[S.emp==='rede'?'centro':S.emp].n} · o preço vem da tabela do cliente.</p></div></div>
+  <div class="tabs" role="tablist"><button role="tab" aria-selected="${tab==='unico'}" data-a="tab-laudo" data-v="unico">Um laudo</button><button role="tab" aria-selected="${tab==='lote'}" data-a="tab-laudo" data-v="lote">Vários de uma vez</button></div>
+  ${tab==='unico'?`<div class="grid g21"><div class="card">${form}</div><div class="card" style="display:flex;flex-direction:column;gap:12px"><div id="lpanel" style="display:flex;flex-direction:column;gap:12px">${p.html}</div>
+    <button class="btn" id="b-lan" data-a="lancar"${p.dup&&!can('desconto')?' disabled':''}>Lançar laudo</button></div></div>`:`<div class="card">${lote}</div>`}
+  <div class="card"><h2>Lançados hoje</h2><div class="tw" style="margin-top:8px"><table><thead><tr><th>Hora</th><th>Placa</th><th>Cliente</th><th>Serviço</th><th>Vistoriador</th><th>Pagamento</th><th class="num">Valor</th><th></th></tr></thead><tbody id="hoje">${LAUDOS.filter(x=>S.role!=='VIS'||x.vist==='Ana Souza').map(x=>`<tr><td>${x.h}</td><td><b>${x.placa}</b></td><td>${x.cliente}</td><td>${x.serv}</td><td>${x.vist}</td><td>${x.forma}</td><td class="num">${R(x.valor)}</td><td>${x.manual?'<span class="pill p-par">! Preço manual</span>':''}</td></tr>`).join('')}</tbody></table></div>
+  <p class="mut sm" style="margin-top:8px">${S.role==='VIS'?'Você vê só os seus laudos. Pode editar o de hoje enquanto não for faturado, baixado ou o caixa fechado, e pode solicitar cancelamento.':'Cancelar laudo exige motivo e a autorização do gerente.'}</p></div>`};
+
+V.receber=()=>{const rows=T,tot=[...S.sel].reduce((s,i)=>s+T[i].saldo,0);
+ return `<div class="head"><div><h1>A receber</h1><p class="mut">Cada laudo gera um título. Baixa total ou parcial, individual ou em lote.</p></div></div>
+ <div class="card"><div class="row" style="margin-bottom:12px"><div class="fld"><label for="r-c">Cliente</label><select id="r-c"><option>Todos</option>${Object.keys(CLIENTES).map(c=>`<option>${c}</option>`)}</select></div>
+  <div class="fld"><label for="r-s">Situação</label><select id="r-s"><option>Todas</option><option>Em aberto</option><option>Vencidos</option><option>Quitados</option></select></div>
+  <div class="fld"><label for="r-p">Período</label><select id="r-p"><option>Outubro/2026</option><option>Setembro/2026</option></select></div></div>
+ <div class="tw"><table><thead><tr><th><input type="checkbox" data-a="sel-all" aria-label="Selecionar todos"></th><th>Laudo</th><th>Placa</th><th>Cliente</th><th>Serviço</th><th>Vencimento</th><th>Forma</th><th class="num">Valor</th><th class="num">Saldo</th><th>Situação</th></tr></thead>
+ <tbody>${rows.map(t=>`<tr class="${S.sel.has(t.id)?'sel':''}"><td><input type="checkbox" data-a="sel" data-v="${t.id}" aria-label="Selecionar ${t.laudo}"${t.saldo===0?' disabled':''}${S.sel.has(t.id)?' checked':''}></td><td>${t.laudo}</td><td><b>${t.placa}</b></td><td>${t.cliente}</td><td>${t.serv}</td><td>${D(t.venc)}</td><td>${t.forma}</td><td class="num">${R(t.valor)}</td><td class="num">${R(t.saldo)}</td><td>${pill(stT(t))}</td></tr>`).join('')}</tbody>
+ <tfoot><tr><td colspan="7">Total em aberto</td><td class="num">${R(T.reduce((s,t)=>s+t.valor,0))}</td><td class="num">${R(T.reduce((s,t)=>s+t.saldo,0))}</td><td></td></tr></tfoot></table></div></div>
+ ${S.sel.size?`<div class="act"><span><b>${S.sel.size}</b> título(s) · ${R(tot)}</span><button class="btn" data-a="baixar">Baixar selecionados</button></div>`:''}`};
+function jurosDe(ts){let m=0,j=0;ts.forEach(t=>{if(t.venc<HOJE){const d=dias(t.venc,HOJE);m+=t.saldo*.02;j+=t.saldo*.01*d/30}});return {m,j}}
+function drawerBaixa(){const ts=[...S.sel].map(i=>T[i]),sub=ts.reduce((s,t)=>s+t.saldo,0),{m,j}=jurosDe(ts);
+ modal(`<div class="row" style="justify-content:space-between"><h2>Baixar ${ts.length} título(s)</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>
+ <div class="fld"><label for="b-d">Data do recebimento</label><input id="b-d" value="27/10/2026"></div>
+ <div class="fld"><label for="b-f">Forma de pagamento</label><select id="b-f">${FORMAS.slice(0,5).map(f=>`<option>${f}</option>`)}</select></div>
+ <div class="fld"><label for="b-c">Conta financeira</label><select id="b-c"><option>Caixa Loja Centro</option><option>Banco Itaú · c/c 12345-6</option></select></div>
+ <div class="card line"><div class="row" style="justify-content:space-between"><span>Saldo dos títulos</span><b class="num">${R(sub)}</b></div>
+  <div class="row" style="justify-content:space-between"><span>Multa (2%)</span><b class="num">${R(m)}</b></div>
+  <div class="row" style="justify-content:space-between"><span>Juros (1% ao mês, por dia)</span><b class="num">${R(j)}</b></div>
+  <hr style="border:0;border-top:1px solid var(--borda);margin:8px 0"><div class="row" style="justify-content:space-between"><b>Total a receber</b><b class="num" style="font-size:20px;color:var(--verde)">${R(sub+m+j)}</b></div></div>
+ <div class="fld"><label for="b-v">Valor recebido (R$)</label><input id="b-v" value="${(sub+m+j).toFixed(2).replace('.',',')}"><small>Menor que o total gera baixa parcial.</small></div>
+ ${can('estornar')?'<p class="mut sm">Juros e multa podem ser reduzidos por quem tem permissão, com motivo.</p>':''}
+ <button class="btn" data-a="conf-baixa">Confirmar baixa</button>`,true)}
+
+function fatFiltradas(){const F=S.ff;return FAT.filter(x=>{const d=F.por==='emi'?x.emi:x.venc;return (F.cli==='Todos'||x.cliente===F.cli)&&(!F.de||d>=F.de)&&(!F.ate||d<=F.ate)&&(F.st==='Todas'||(F.st==='Vencidas'?x.venc<HOJE&&x.saldo>0:F.st==='Parciais'?x.saldo>0&&x.saldo<x.valor:x.saldo===x.valor&&x.venc>=HOJE))})}
+function filtroFat(n){const F=S.ff,so=(id,k,l,o)=>`<div class="fld"><label for="${id}">${l}</label><select id="${id}" data-ff="${k}">${o.map(x=>Array.isArray(x)?`<option value="${x[0]}"${x[0]===F[k]?' selected':''}>${x[1]}</option>`:`<option${x===F[k]?' selected':''}>${x}</option>`).join('')}</select></div>`;
+ return `<div class="card"><div class="row">${so('ff-c','cli','Cliente',['Todos',...Object.keys(CLIENTES)])}${so('ff-p','por','Filtrar por',[['venc','Vencimento'],['emi','Emissão']])}
+ <div class="fld"><label for="ff-de">De</label><input id="ff-de" type="date" data-ff="de" value="${F.de}"></div><div class="fld"><label for="ff-ate">Até</label><input id="ff-ate" type="date" data-ff="ate" value="${F.ate}"></div>
+ ${so('ff-s','st','Situação',['Todas','Em aberto','Vencidas','Parciais'])}</div>
+ <div class="row" style="margin-top:12px;justify-content:space-between;align-items:center"><div class="row"><button class="chip" data-a="ff-preset" data-v="mes">Este mês</button><button class="chip" data-a="ff-preset" data-v="30">Últimos 30 dias</button><button class="chip" data-a="ff-preset" data-v="venc">Só vencidas</button><button class="chip" data-a="ff-limpar">Limpar filtros</button></div><span class="mut sm">${n} de ${FAT.length} faturas</span></div></div>`}
+V.faturados=()=>{const FL=fatFiltradas(),f=FL.find(x=>x.n===S.fat)||FL[0],st=x=>x.saldo===0?'ok':(x.venc<HOJE?'venc':(x.saldo<x.valor?'par':'open')),tot=[...S.selF].reduce((s,n)=>s+FAT.find(x=>x.n===n).saldo,0);
+ const emAberto=FL.reduce((s,x)=>s+x.saldo,0),venc=FL.filter(x=>x.venc<HOJE).reduce((s,x)=>s+x.saldo,0);
+ return `<div class="head"><div><h1>Faturados</h1><p class="mut">Uma fatura por empresa, cliente e período. Se o cliente usa duas lojas, recebe duas faturas.</p></div>
+  <div class="row"><button class="btn sec" data-a="gerar-faturas">Gerar faturas do período</button></div></div>
+  ${filtroFat(FL.length)}
+  <div class="grid g3"><div class="card kpi"><div class="l">Faturado em aberto</div><div class="v">${R(emAberto)}</div></div><div class="card kpi"><div class="l">Vencido</div><div class="v" style="color:var(--erro)">${R(venc)}</div></div><div class="card kpi"><div class="l">Faturas abertas</div><div class="v">${FL.length}</div></div></div>
+  <div class="card"><div class="tw"><table><thead><tr><th><input type="checkbox" aria-label="Selecionar todas" data-a="selF-all"></th><th>Fatura</th><th>Cliente</th><th>Período</th><th>Vencimento</th><th class="num">Laudos</th><th class="num">Saldo</th><th>Situação</th></tr></thead>
+  <tbody>${FL.length?'':'<tr><td colspan="8" class="mut" style="padding:24px">Nenhuma fatura com esses filtros. Use “Limpar filtros” para ver todas.</td></tr>'}${FL.map(x=>`<tr class="${S.selF.has(x.n)?'sel':''}"><td><input type="checkbox" data-a="selF" data-v="${x.n}" aria-label="Selecionar ${x.n}"${S.selF.has(x.n)?' checked':''}></td><td><button class="chip" style="min-height:30px" data-a="fat" data-v="${x.n}" aria-pressed="${x.n===f.n}">${x.n}</button></td><td>${x.cliente}</td><td>${x.per}</td><td>${D(x.venc)}</td><td class="num">${x.lau}</td><td class="num">${R(x.saldo)}</td><td>${pill(st(x))}</td></tr>`).join('')}</tbody></table></div></div>
+  ${S.selF.size?`<div class="act"><span><b>${S.selF.size}</b> fatura(s) · ${R(tot)}</span><button class="btn" data-a="baixa-fat">Baixar em lote</button></div>`:''}
+  ${f?docFatura(f):''}`};
+function docFatura(f){const cf=contasFatura('Loja Centro'),d=f.venc<HOJE?dias(f.venc,HOJE):0,mu=d?f.saldo*.02:0,ju=d?f.saldo*.01*d/30:0;
+ const it=[['RTX4F21','Cautelar',180],['QWE1R23','Transferência',120],['FGT5H42','Procedência',150],['VBN7K12','Cautelar',180]],s=it.reduce((a,b)=>a+b[2],0);
+ return `<div class="card"><div class="head" style="margin-bottom:12px"><h2>Prévia da fatura ${f.n}</h2><div class="row"><button class="btn sec sm2" data-a="pdf">Gerar PDF</button><button class="btn sec sm2" data-a="email">Enviar por e-mail</button><button class="btn sm2" data-a="baixa-fat1" data-v="${f.n}">Baixar fatura</button></div></div>
+ ${cf.length?'':'<div class="msg warn" style="margin-bottom:12px"><span aria-hidden="true">!</span><div><b>Esta fatura sai sem dados para pagamento.</b> Nenhuma conta da Loja Centro está marcada para aparecer na fatura. Cadastre em Cadastros › Empresas › Contas bancárias.</div></div>'}${cf.find(c=>c.pix)?'<div class="msg info" style="margin-bottom:12px"><span aria-hidden="true">i</span><div>O QR Code vale para o <b>total desta fatura com juros e multa até hoje</b>. Ele não confirma o pagamento sozinho: confira o extrato e baixe a fatura.</div></div>':''}<div class="doc"><div class="lh"><div class="lbox">${S.brand.logo?`<img src="${S.brand.logo}" alt="Logo da loja">`:'LOGO DA LOJA'}</div><div style="text-align:right"><b style="font-size:16px;color:var(--verde)">FATURA ${f.n}</b><div class="sm mut">Emissão ${D(f.emi)} · Vencimento ${D(f.venc)}</div></div></div>
+ <div class="sm" style="margin-bottom:10px"><b>Loja Centro</b> · CNPJ 12.345.678/0001-90<br>Cliente: <b>${f.cliente}</b> · Período: ${f.per}</div>
+ <table><thead><tr><th>Placa</th><th>Serviço</th><th class="num">Valor</th></tr></thead><tbody>${it.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${R(r[2])}</td></tr>`).join('')}<tr><td colspan="2" class="mut">Demais ${f.lau-4} laudos</td><td class="num">${R(f.valor-s)}</td></tr></tbody>
+ <tfoot><tr><td colspan="2">Valor da fatura</td><td class="num">${R(f.valor)}</td></tr>${f.valor!==f.saldo?`<tr><td colspan="2" class="mut">Já pago</td><td class="num">− ${R(f.valor-f.saldo)}</td></tr>`:''}${d?`<tr><td colspan="2" class="mut">Multa 2% + juros (${d} dia${d>1?'s':''})</td><td class="num">${R(mu+ju)}</td></tr>`:''}<tr><td colspan="2">Total a pagar</td><td class="num">${R(f.saldo+mu+ju)}</td></tr></tfoot></table>
+ ${cf.length?`<div style="margin-top:14px;border:1.5px solid var(--brand);border-radius:8px;padding:12px"><b style="color:var(--verde)">Como pagar</b>${(()=>{const pc=cf.find(c=>c.pix);if(!pc)return '';const code=pixPayload(pc,f.saldo+mu+ju,f.n),svg=qrSvg(code);return `<div class="row" style="flex-wrap:nowrap;align-items:center;gap:16px;margin-top:10px"><div style="width:132px;flex:none;background:#fff">${svg||'<div class=\'sm mut\'>QR indisponível offline</div>'}</div><div class="sm" style="min-width:0"><b>Pague com PIX</b><br>Aponte a câmera do app do banco para o QR Code. Valor: <b>${R(f.saldo+mu+ju)}</b>.<div class="mut" style="margin-top:6px">Pix copia e cola</div><div style="word-break:break-all;font-size:10px;line-height:14px;background:#F4F6F2;border-radius:6px;padding:6px;margin:4px 0" id="pixcode">${code}</div><button class="btn sec sm2" type="button" data-a="copy-pix">Copiar código</button></div></div>`})()}${cf.map(c=>`<div class="sm" style="margin-top:8px;line-height:20px">${c.ag?`Transferência ou TED: <b>${c.banco}</b> · Ag. <b>${c.ag}</b> · Conta ${c.tipo.toLowerCase()} <b>${c.cc}</b><br>`:`Banco: <b>${c.banco}</b><br>`}Titular: ${c.titular} · CNPJ ${c.doc}${c.pix?`<br>PIX (${c.pixT}): <b>${c.pix}</b>`:''}</div>`).join('')}<div class="sm mut" style="margin-top:8px">Após o pagamento, envie o comprovante ao financeiro informando o nº da fatura.</div></div>`:''}
+ <p class="sm mut" style="margin-top:12px">Ref. NF: ______ · Ref. boleto: ______ (preenchidos por fora do sistema)</p></div></div>`}
+
+V.pagar=()=>{const stP=p=>p.st==='Pago'?['p-ok','✓ Pago']:p.st==='Aguardando aprovação'?['p-info','◔ Aguardando aprovação']:(p.venc<HOJE?['p-venc','! Vencido']:['p-open','○ Aprovado']);
+ const aberto=PAG.filter(p=>p.st!=='Pago').reduce((s,p)=>s+p.valor,0),venc=PAG.filter(p=>p.st!=='Pago'&&p.venc<HOJE).reduce((s,p)=>s+p.valor,0),ag=PAG.filter(p=>p.st==='Aguardando aprovação').length;
+ return `<div class="head"><div><h1>A pagar</h1><p class="mut">Inclui recorrências, royalties, comissões, custos de laudo e rateios gerados pelo sistema.</p></div><button class="btn" data-a="novo-pagar">Novo título</button></div>
+ <div class="grid g3"><div class="card kpi"><div class="l">A pagar em aberto</div><div class="v">${R(aberto)}</div></div><div class="card kpi"><div class="l">Vencidos</div><div class="v" style="color:var(--erro)">${R(venc)}</div></div><div class="card kpi"><div class="l">Aguardando aprovação</div><div class="v">${ag}</div></div></div>
+ ${!can('aprovar')?'<div class="msg info"><span aria-hidden="true">i</span><div>Seu perfil cria e paga títulos, mas a aprovação fica com o Gerente ou o Administrativo. Quem cria não aprova.</div></div>':''}
+ <div class="card"><div class="tw"><table><thead><tr><th>Descrição</th><th>Fornecedor</th><th>Origem</th><th>Vencimento</th><th class="num">Valor</th><th>Situação</th><th></th></tr></thead><tbody>${PAG.map(p=>{const s=stP(p);return `<tr><td><b>${p.desc}</b></td><td>${p.forn}</td><td><span class="pill p-open">${p.orig}</span></td><td>${D(p.venc)}</td><td class="num">${R(p.valor)}</td><td><span class="pill ${s[0]}">${s[1]}</span></td>
+ <td>${p.st==='Aguardando aprovação'?(can('aprovar')?`<button class="btn sm2" data-a="aprovar" data-v="${p.id}">Aprovar</button>`:'<span class="lock">🔒 só Gerente ou Administrativo</span>'):p.st==='Aprovado'?`<button class="btn sec sm2" data-a="pagar" data-v="${p.id}">Registrar pagamento</button>`:''}</td></tr>`}).join('')}</tbody></table></div></div>`};
+
+V.caixa=()=>{const cartao=[['28/10','Débito','Cielo',1240,1.19,0],['29/10','Crédito 1x','Cielo',2860,2.69,0],['25/11','Crédito 2x (parcela 1)','Cielo',1500,3.89,0],['30/10','Crédito 1x (antecipado)','Rede',3200,2.69,1.8]];
+ const liq=r=>r[3]*(1-(r[4]+r[5])/100);
+ return `<div class="head"><div><h1>Caixa</h1><p class="mut">Contas financeiras, movimentos e previsão de cartão. Saldo vem dos lançamentos, nunca é digitado.</p></div></div>
+ <div class="grid g3"><div class="card kpi"><div class="l">Caixa Loja Centro</div><div class="v">${R(3420)}</div></div><div class="card kpi"><div class="l">Banco Itaú · c/c 12345-6</div><div class="v">${R(58730.15)}</div></div><div class="card kpi"><div class="l">Cartão a receber (previsto)</div><div class="v">${R(cartao.reduce((s,r)=>s+liq(r),0))}</div></div></div>
+ <div class="grid g21"><div class="card"><h2>Movimentos de hoje</h2><div class="tw" style="margin-top:8px"><table><thead><tr><th>Hora</th><th>Descrição</th><th>Conta</th><th class="num">Valor</th></tr></thead><tbody>
+  ${[['16:42','Baixa L-48215 · PIX','Banco Itaú',120],['15:10','Laudo PLK8J31 · PIX','Banco Itaú',220],['14:02','Laudo CDE4F90 · dinheiro','Caixa Loja',190],['11:30','Pagamento energia elétrica','Banco Itaú',-1260],['09:15','Sangria para depósito','Caixa Loja',-1500]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num" style="color:${r[3]<0?'var(--erro)':'var(--texto)'}">${r[3]<0?'− ':'+ '}${R(Math.abs(r[3]))}</td></tr>`).join('')}</tbody></table></div></div>
+ <div class="card" style="display:flex;flex-direction:column;gap:12px"><h2>Fechamento do caixa</h2><div class="row" style="justify-content:space-between"><span>Saldo do sistema</span><b class="num">${R(3420)}</b></div>
+  <div class="fld"><label for="c-ct">Valor contado (R$)</label><input id="c-ct" data-in="contado" inputmode="decimal" value="3420,00"></div><div id="c-dif" class="msg ok"><span aria-hidden="true">✓</span><div>Sem diferença.</div></div>
+  <button class="btn" data-a="fechar-caixa">Fechar caixa de 27/10</button></div></div>
+ <div class="card"><h2>Previsão de recebimento de cartão</h2><p class="mut sm" style="margin-bottom:8px">Taxa da operadora e antecipação configuradas por empresa e forma de pagamento.</p><div class="tw"><table><thead><tr><th>Data prevista</th><th>Tipo</th><th>Operadora</th><th class="num">Bruto</th><th class="num">Taxa</th><th class="num">Antecipação</th><th class="num">Líquido</th></tr></thead><tbody>
+ ${cartao.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${R(r[3])}</td><td class="num">${r[4].toFixed(2).replace('.',',')}%</td><td class="num">${r[5]?r[5].toFixed(2).replace('.',',')+'%':'—'}</td><td class="num"><b>${R(liq(r))}</b></td></tr>`).join('')}</tbody></table></div></div>`};
+
+V.clientes=()=>{const c=S.cli,pr=CLIENTES[c],cfg={'Auto Center Premium':['Quinzenal','10','2,00','1,00'],'Revenda Silva Veículos':['Quinzenal','10','2,00','1,00'],'Locadora Rota 66':['Mensal','10','2,00','1,00'],'Particular (balcão)':['—','—','—','—'],'Transportadora Lima':['Quinzenal','10','2,00','1,00']}[c];
+ return `<div class="head"><div><h1>Clientes e preços</h1><p class="mut">O cliente é do grupo e o preço vale para todas as lojas dele.</p></div><button class="btn" data-a="novo-cli">Novo cliente</button></div>
+ <div class="sw narrow"><div style="display:flex;flex-direction:column;gap:8px">${Object.keys(CLIENTES).map(k=>`<button class="list-i" data-a="cli" data-v="${k}" aria-pressed="${k===c}"><span><b>${k}</b><br><span class="mut sm">${Object.keys(CLIENTES[k]).length} preço(s)</span></span></button>`).join('')}</div>
+ <div style="display:flex;flex-direction:column;gap:16px;min-width:0"><div class="card"><h2>Faturamento</h2><div class="grid g2" style="margin-top:12px"><div class="fld"><label>Periodicidade</label><select><option>${cfg[0]}</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select></div><div class="fld"><label>Prazo de vencimento (dias)</label><input value="${cfg[1]}"></div><div class="fld"><label>Multa (%)</label><input value="${cfg[2]}"></div><div class="fld"><label>Juros ao mês (%)</label><input value="${cfg[3]}"></div></div></div>
+ <div class="card"><div class="head" style="margin-bottom:8px"><h2>Tabela de preços</h2><button class="btn sec sm2" data-a="novo-preco">Cadastrar preço</button></div><div class="tw"><table><thead><tr><th>Serviço</th><th class="num">Valor</th><th>Vigência</th><th>Situação</th><th></th></tr></thead><tbody>
+ ${SERV.map(s=>pr[s]!==undefined?`<tr><td><b>${s}</b></td><td class="num">${R(pr[s])}</td><td>desde 01/09/2026</td><td><span class="pill p-ok">✓ Vigente</span></td><td>${can('reajustar')?`<button class="btn sec sm2" data-a="reajustar" data-v="${s}">Reajustar</button>`:'<span class="lock">🔒 reajuste só pelo Administrativo</span>'}</td></tr>`:`<tr><td><b>${s}</b></td><td class="num mut">—</td><td class="mut">sem preço</td><td><span class="pill p-par">! Sem preço</span></td><td><button class="btn sm2" data-a="novo-preco" data-v="${s}">Cadastrar primeiro preço</button></td></tr>`).join('')}</tbody></table></div>
+ <p class="mut sm" style="margin-top:8px">${S.role==='FIN'?'Seu perfil só consulta preços.':'O Gerente cadastra o primeiro preço. Reajustar um preço existente é do Administrativo, porque muda o valor em todas as lojas.'}</p></div>
+ <div class="card"><h3>Histórico de alterações</h3><p class="sm mut" style="margin-top:6px">01/09/2026 · Cautelar: R$ 170,00 → R$ ${pr.Cautelar?pr.Cautelar.toFixed(2).replace('.',','):'—'} · por Administrativo (reajuste anual)</p></div></div></div>`};
+
+const REL={oper:['Laudos por empresa','Laudos por cliente','Laudos por serviço','Laudos por vistoriador','Laudos por forma de pagamento','Preços manuais para revisão'],
+ fin:['Contas a receber por período','Faturados em aberto','Inadimplência por cliente','Contas a pagar por período','Recebimentos por forma de pagamento','Fluxo de caixa realizado e projetado'],
+ ger:['DRE','Balanço gerencial','Margem por serviço e cliente','Comissões por vistoriador','Royalties apurados']};
+V.relatorios=()=>{const t=S.tab.rel;
+ return `<div class="head"><div><h1>Relatórios</h1><p class="mut">Filtro por período e exportação em PDF e Excel. Cada exportação fica no log.</p></div></div>
+ <div class="tabs" role="tablist">${[['oper','Operacionais'],['fin','Financeiros'],['ger','Gerenciais']].map(a=>`<button role="tab" aria-selected="${t===a[0]}" data-a="tab-rel" data-v="${a[0]}">${a[1]}</button>`).join('')}</div>
+ ${t==='ger'?relGer():`<div class="grid g3">${REL[t].map(n=>`<div class="card line" style="display:flex;flex-direction:column;gap:12px"><h3>${n}</h3><div class="row"><button class="btn sec sm2" data-a="exp" data-v="PDF">PDF</button><button class="btn sec sm2" data-a="exp" data-v="Excel">Excel</button></div></div>`).join('')}</div>`}`};
+function relGer(){const f=EMP[S.emp].fat/EMP.rede.fat,caixa=S.tab.dre==='caixa',rb=482350*f*(caixa?449/482.35:1);
+ if(!can('dre'))return `<div class="card"><div class="msg info"><span aria-hidden="true">i</span><div><b>DRE e Balanço estão bloqueados para o seu perfil.</b><br>O Administrativo pode liberar o acesso a um Financeiro quando precisar.</div></div></div>`;
+ const ded=rb*.03,rl=rb-ded,lau=EMP[S.emp].lau*(caixa?449/482.35:1),det=lau*38,com=rb*.08,mc=rl-det-com,pes=92400*f,alu=28000*f,roy=rb*.05,mkt=rb*.02,adm=14300*f,fin=6980*f,res=mc-pes-alu-roy-mkt-adm-fin;
+ const line=(n,v,b,ind)=>`<tr><td style="padding-left:${ind?28:12}px;${b?'font-weight:700':''}">${n}</td><td class="num" style="${b?'font-weight:700':''}">${v<0?'(':''}${R(Math.abs(v))}${v<0?')':''}</td><td class="num mut">${(v/rb*100).toFixed(1).replace('.',',')}%</td></tr>`;
+ return `<div class="card"><div class="head" style="margin-bottom:8px"><div><h2>DRE · ${EMP[S.emp].n} · Outubro/2026</h2><p class="mut sm">Dados de exemplo. Alíquota de ISS de 3% configurada na empresa.</p></div>
+ <div class="row"><button class="chip" data-a="dre" data-v="comp" aria-pressed="${!caixa}">Competência</button><button class="chip" data-a="dre" data-v="caixa" aria-pressed="${caixa}">Caixa</button><button class="btn sec sm2" data-a="exp" data-v="PDF">PDF</button><button class="btn sec sm2" data-a="exp" data-v="Excel">Excel</button></div></div>
+ <div class="tw"><table><thead><tr><th>Conta</th><th class="num">Valor</th><th class="num">% da receita</th></tr></thead><tbody>
+ ${line(caixa?'Receita recebida':'Receita bruta de serviços',rb,1)}${line('(−) ISS 3,00%',-ded,0,1)}${line('Receita líquida',rl,1)}${line('(−) Taxas Detran e sistema de laudo',-det,0,1)}${line('(−) Comissões de vistoriadores',-com,0,1)}${line('Margem de contribuição',mc,1)}
+ ${line('(−) Pessoal',-pes,0,1)}${line('(−) Aluguel',-alu,0,1)}${line('(−) Royalties (5%)',-roy,0,1)}${line('(−) Fundo de marketing (2%)',-mkt,0,1)}${line('(−) Administrativas',-adm,0,1)}${line('(−) Financeiras (taxas de cartão)',-fin,0,1)}${line('Resultado do período',res,1)}</tbody></table></div></div>`}
+
+V.aparencia=()=>{const c=S.brand.cor,r=cr(c,'#FFFFFF'),ok=r>=4.5;
+ return `<div class="head"><div><h1>Aparência</h1><p class="mut">Logo e cor da sua marca no sistema, nos relatórios, nas faturas e nos e-mails.</p></div></div>
+ <div class="grid g2 narrow"><div class="card" style="display:flex;flex-direction:column;gap:16px"><div class="fld"><label for="t-esc">Aplicar a</label><select id="t-esc" data-in="escopo"><option${S.brand.escopo==='Grupo'?' selected':''}>Grupo</option><option${S.brand.escopo==='Loja Centro'?' selected':''}>Loja Centro</option><option>Loja Norte</option></select><small>A loja herda o tema do grupo, a menos que tenha o próprio.</small></div>
+  <div class="fld"><label for="t-logo">Logotipo (PNG ou SVG)</label><input id="t-logo" type="file" accept="image/png,image/svg+xml" data-in="logo"><small>Fundo transparente, a partir de 200 px de largura.</small></div>
+  <div class="fld"><label for="t-cor">Cor principal</label><div class="row"><input id="t-cor" type="color" data-in="cor" value="${c}" style="width:72px;padding:4px"><input id="t-hex" value="${c}" readonly style="max-width:120px"></div></div>
+  <div id="t-ct" class="msg ${ok?'ok':'err'}"><span aria-hidden="true">${ok?'✓':'!'}</span><div>${ok?`Contraste ${r.toFixed(2).replace('.',',')}:1 com texto branco. Boa leitura.`:`Contraste ${r.toFixed(2).replace('.',',')}:1. Abaixo de 4,5:1, o sistema troca o texto para escuro nos botões.`}</div></div>
+  <div class="row"><button class="btn" data-a="salvar-tema">Salvar tema</button><button class="btn sec" data-a="reset-tema">Voltar ao padrão ECV Cash</button></div>
+  <p class="mut sm">Cores de erro, aviso, sucesso e dos gráficos não mudam. Assim “vencido” nunca se confunde com “pago”.</p></div>
+ <div class="card" style="display:flex;flex-direction:column;gap:16px"><h2>Prévia</h2>
+  <div class="card line" style="display:flex;gap:12px;align-items:center"><div class="lbox">${S.brand.logo?`<img src="${S.brand.logo}" alt="Logo">`:'SEU LOGO'}</div><b style="color:var(--verde)">Loja Centro</b></div>
+  <div class="row"><button class="btn">Lançar laudo</button><button class="btn sec">Cancelar</button><span class="pill p-ok">✓ Quitado</span><span class="pill p-venc">! Vencido</span></div>
+  <div class="doc" style="padding:16px"><div class="lh" style="margin-bottom:8px"><b style="color:var(--verde)">FATURA F-2026-0398</b><span class="sm mut">Relatórios e PDFs usam o mesmo logo e a mesma cor</span></div><div style="height:8px;background:#E8EDE6;border-radius:4px;margin-bottom:6px"></div><div style="height:8px;width:70%;background:#E8EDE6;border-radius:4px"></div></div></div></div>`};
+
+const CADT=[['servicos','Serviços'],['vistoriadores','Vistoriadores'],['formas','Formas de pagamento'],['usuarios','Usuários'],['empresas','Empresas'],['plano','Plano de contas']];
+const CADNEW={servicos:['ADM'],vistoriadores:['ADM','GER'],formas:['ADM'],usuarios:['ADM','GER'],empresas:['ADM'],plano:['ADM']};
+const CADLBL={servicos:'Novo serviço',vistoriadores:'Novo vistoriador',formas:'Nova forma de pagamento',usuarios:'Novo usuário',empresas:'Nova empresa',plano:'Nova conta'};
+const act=(t)=>CADNEW[t].includes(S.role);
+V.cadastros=()=>{const t=S.tab.cad||'servicos',lojaSo=S.role!=='ADM',b=ok=>ok?'<span class="pill p-ok">✓ Ativo</span>':'<span class="pill p-open">Inativo</span>';
+ const ed='<button class="btn sec sm2" data-a="x-edit">Editar</button>';
+ const tab={
+ servicos:`<table><thead><tr><th>Serviço</th><th>Código</th><th>Conta de receita</th><th>Custos diretos por laudo</th><th>Situação</th><th></th></tr></thead><tbody>${SERVS.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3].length?r[3].map(c=>`${c[0]}: ${c[1]==='%'?c[2]+'%':R(c[2])}${c[3]==='Sim'?' (gera conta a pagar)':''}`).join('<br>'):'<span class="mut">Nenhum</span>'}</td><td>${b(1)}</td><td>${act(t)?ed:''}</td></tr>`).join('')}</tbody></table>`,
+ vistoriadores:`<table><thead><tr><th>Nome</th><th>CPF</th><th>Lojas</th><th>Tem acesso ao sistema</th><th>Comissão</th><th>Situação</th><th></th></tr></thead><tbody>${VISTS.filter(r=>!lojaSo||r[2].includes('Loja Centro')).map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2].join(', ')}</td><td>${r[3]}</td><td>${r[4]}</td><td>${b(1)}</td><td>${act(t)?ed:''}</td></tr>`).join('')}</tbody></table>`,
+ formas:`<table><thead><tr><th>Forma</th><th>Tipo</th><th>Gera fatura</th><th>Taxa e prazo (Loja Centro)</th><th>Situação</th><th></th></tr></thead><tbody>${FPGS.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${b(1)}</td><td>${act(t)?ed:''}</td></tr>`).join('')}</tbody></table>`,
+ usuarios:`<table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Acesso a</th><th>2 fatores</th><th>Situação</th><th></th></tr></thead><tbody>${USERS.filter(r=>!lojaSo||r[3].includes('Centro')).map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td><span class="pill p-open">${r[2]}</span></td><td>${r[3]}</td><td>${r[4]}</td><td>${b(1)}</td><td>${act(t)&&!(S.role==='GER'&&['Administrativo','Gerente'].includes(r[2]))?ed+' <button class="btn sec sm2" data-a="x-edit">Redefinir senha</button>':'<span class="lock">🔒</span>'}</td></tr>`).join('')}</tbody></table>`,
+ empresas:`<table><thead><tr><th>Empresa</th><th>CNPJ</th><th>UF</th><th>Regime</th><th>Alíquotas</th><th>Contas bancárias</th><th>Situação</th><th></th></tr></thead><tbody>${EMPS.filter(r=>!lojaSo||r[0]==='Loja Centro').map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>ISS 3,00%</td><td>${(BANK[r[0]]||[]).length?`${BANK[r[0]].length} conta(s) · ${contasFatura(r[0]).length} na fatura`:'<span class="pill p-par">! Nenhuma</span>'}</td><td>${b(1)}</td><td><div class="row"><button class="btn sec sm2" data-a="contas" data-v="${r[0]}">Contas bancárias</button>${S.role==='ADM'||S.role==='GER'?ed:''}</div></td></tr>`).join('')}</tbody></table>`,
+ plano:`<table><thead><tr><th>Código</th><th>Conta</th><th></th></tr></thead><tbody>${PLT.map(r=>`<tr><td>${r[0]}</td><td style="padding-left:${r[2]?32:12}px;${r[2]?'':'font-weight:700'}">${r[1]}</td><td>${act(t)&&r[2]?ed:''}</td></tr>`).join('')}</tbody></table>`}[t];
+ const note={servicos:'Cada serviço tem uma conta de receita e custos diretos opcionais, que viram margem por laudo. O preço de cada cliente fica em Clientes e preços.',vistoriadores:'Um vistoriador pode atuar em mais de uma loja. Para lançar laudos, ele precisa ter acesso ao sistema.',formas:'A taxa da operadora, o prazo de recebimento e a antecipação são configurados por empresa.',usuarios:S.role==='GER'?'Como Gerente, você cria e edita só Financeiro e Vistoriador da sua loja.':'Administrativo e Gerente só podem ser criados pelo Administrativo.',empresas:'Cada empresa tem CNPJ, regime, alíquotas e contas bancárias próprios. As contas marcadas aparecem na fatura para o cliente pagar. Logo e cores ficam em Aparência.',plano:'Plano padrão para ECV, editável pelo Administrativo. Alimenta o DRE e o balanço gerencial.'}[t];
+ return `<div class="head"><div><h1>Cadastros</h1><p class="mut">${S.role==='FIN'?'Seu perfil consulta os cadastros.':note}</p></div>${act(t)?`<button class="btn" data-a="novo-cad">${CADLBL[t]}</button>`:''}</div>
+ <div class="tabs" role="tablist">${CADT.map(a=>`<button role="tab" aria-selected="${t===a[0]}" data-a="tab-cad" data-v="${a[0]}">${a[1]}</button>`).join('')}</div>
+ <div class="card"><div class="tw">${tab}</div>${S.role!=='FIN'?`<p class="mut sm" style="margin-top:10px">${note}</p>`:''}</div>`};
+function drawerContas(emp){S.contaEmp=emp;const L=BANK[emp]||[],ed=canConta(emp),cl=c=>c.fatura;
+ const I=(id,l,x='')=>`<div class="fld"><label for="${id}">${l}</label><input id="${id}" ${x}></div>`;
+ modal(`<div class="row" style="justify-content:space-between"><h2>Contas bancárias · ${emp}</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>
+ <p class="mut sm">As contas marcadas “Mostrar na fatura” aparecem no bloco “Como pagar” de toda fatura desta empresa.</p>
+ ${L.length?L.map((c,i)=>`<div class="card line" style="display:flex;flex-direction:column;gap:6px"><div class="row" style="justify-content:space-between"><b>${c.banco}</b>${c.pend?'<span class="pill p-info">◔ Aguardando confirmação do Administrativo</span>':c.fatura?'<span class="pill p-ok">✓ Aparece na fatura</span>':'<span class="pill p-open">Não aparece na fatura</span>'}</div>
+  <div class="sm">${c.ag?`Ag. ${c.ag} · Conta ${c.tipo.toLowerCase()} ${c.cc}`:'Sem agência e conta'}<br>${c.titular} · CNPJ ${c.doc}<br>${c.pix?`PIX (${c.pixT}): ${c.pix}`:'Sem chave PIX'}</div>
+  ${c.pend?`<div class="msg info"><span aria-hidden="true">i</span><div>Pedido de ${c.pend.por}: ${c.pend.fatura?'mostrar':'tirar'} na fatura. Enquanto isso, a fatura continua como estava.</div></div>${S.role==='ADM'?`<div class="row"><button class="btn sm2" data-a="aprovar-conta" data-v="${i}">Revisar e aprovar</button></div>`:''}`:ed?`<div class="row"><button class="btn sec sm2" data-a="toggle-conta" data-v="${i}">${c.fatura?'Tirar da fatura':'Mostrar na fatura'}</button></div>`:''}</div>`).join(''):'<div class="msg warn"><span aria-hidden="true">!</span><div>Nenhuma conta cadastrada. As faturas desta empresa saem sem dados para pagamento.</div></div>'}
+ ${ed?`<h3 style="margin-top:8px">Adicionar conta</h3>
+ <div class="fld"><label for="ct1">Banco *</label><select id="ct1">${BANCOS.map(b=>`<option>${b}</option>`).join('')}</select></div>
+ <div class="grid g2">${I('ct2','Agência','inputmode="numeric"')}${I('ct3','Conta com dígito','inputmode="numeric"')}</div>
+ <div class="fld"><label for="ct4">Tipo da conta</label><select id="ct4"><option>Corrente</option><option>Poupança</option><option>Pagamento</option></select></div>
+ ${I('ct5','Titular *','value="'+(L[0]?L[0].titular:'')+'"')}${I('ct6','CPF ou CNPJ do titular *','value="'+(L[0]?L[0].doc:'')+'"')}
+ <div class="grid g2"><div class="fld"><label for="ct7">Tipo da chave PIX</label><select id="ct7"><option>CNPJ</option><option>CPF</option><option>E-mail</option><option>Telefone</option><option>Aleatória</option></select></div>${I('ct8','Chave PIX')}</div>
+ <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="ct9" checked style="width:20px;height:20px;accent-color:var(--verde)">Mostrar na fatura</label>
+ <button class="btn" data-a="salvar-conta">Salvar conta</button>`:'<p class="mut sm">Seu perfil consulta as contas. Quem cadastra é o Administrativo ou o Gerente da loja.</p>'}
+ <div class="card line"><h3>Histórico de alterações</h3>${LOGC.filter(l=>l[2]===emp).map(l=>`<p class="sm mut" style="margin-top:6px">${l[0]} · ${l[1]} · ${l[3]}</p>`).join('')||'<p class="sm mut" style="margin-top:6px">Sem alterações.</p>'}<p class="sm mut" style="margin-top:8px">Mudar conta que aparece na fatura exige confirmação do Administrativo, com senha, e avisa por e-mail.</p></div>`,true)}
+function confirmaConta(kind,idx,nova){S.cf={kind,idx,nova,emp:S.contaEmp};const c=kind==='nova'?nova:BANK[S.contaEmp][idx];
+ const txt={nova:'Adicionar a conta '+c.banco+(c.pix?' · PIX '+c.pix:'')+' e mostrá-la nas faturas de '+S.contaEmp+'.',toggle:(c.fatura?'Tirar':'Mostrar')+' a conta '+c.banco+' '+(c.fatura?'das':'nas')+' faturas de '+S.contaEmp+'.',aprovar:'Aprovar o pedido de '+(c.pend&&c.pend.por)+': '+(c.pend&&c.pend.fatura?'mostrar':'tirar')+' a conta '+c.banco+' '+(c.pend&&c.pend.fatura?'nas':'das')+' faturas de '+S.contaEmp+'.'}[kind];
+ modal(`<h2>Confirmar alteração em conta de recebimento</h2><div class="msg warn"><span aria-hidden="true">!</span><div><b>${txt}</b><br>Os clientes passam a pagar pelos dados da fatura. Confira com atenção para evitar desvio de pagamento.</div></div>
+ <p class="sm mut">Ao confirmar, enviamos um aviso por e-mail ao Administrativo e ao financeiro da loja, e a alteração entra no log.</p>
+ <div class="fld"><label for="cf-s">Sua senha *</label><input id="cf-s" type="password" autocomplete="off"></div>
+ <div class="row"><button class="btn" data-a="conf-conta">Confirmar e avisar por e-mail</button><button class="btn sec" data-a="fechar">Cancelar</button></div>`)}
+function modalCad(){const t=S.tab.cad||'servicos',I=(id,l,x='')=>`<div class="fld"><label for="${id}">${l}</label><input id="${id}" ${x}></div>`,Sel=(id,l,o)=>`<div class="fld"><label for="${id}">${l}</label><select id="${id}">${o.map(x=>`<option>${x}</option>`).join('')}</select></div>`;
+ const lojas=S.role==='ADM'?LOJAS:['Loja Centro'],ck=`<div class="fld"><label>Lojas</label><div class="row">${lojas.map(l=>`<label style="display:flex;gap:6px;align-items:center;font-weight:400;color:var(--texto)"><input type="checkbox" class="cd-loja" checked style="width:20px;height:20px;accent-color:var(--verde)">${l}</label>`).join('')}</div></div>`;
+ const cs=`<div class="fld"><label>Custos diretos por laudo (opcional)</label><div id="cd-custos">${[0,1].map(()=>custoRow()).join('')}</div><button class="btn sec sm2" type="button" data-a="add-custo" style="align-self:flex-start">+ Custo</button><small>Ex.: taxa do Detran, tarifa do sistema de laudo. Entram na margem do laudo.</small></div>`;
+ const body={servicos:I('cd1','Nome do serviço *')+`<div class="grid g2">${I('cd2','Código')}${Sel('cd3','Conta de receita *',PLT.filter(r=>r[0].startsWith('1.')).map(r=>'Receitas › '+r[1]))}</div>`+cs,
+  vistoriadores:I('cd1','Nome *')+I('cd2','CPF *')+ck+`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="cd4" style="width:20px;height:20px;accent-color:var(--verde)">Criar acesso ao sistema para lançar laudos</label>`+I('cd5','E-mail do acesso','placeholder="Se marcou a opção acima"'),
+  formas:I('cd1','Nome *')+Sel('cd2','Tipo',['Dinheiro','PIX','Cartão de débito','Cartão de crédito','Cheque','Faturado','Outra'])+`<div class="grid g2">${I('cd3','Taxa da operadora (%)','placeholder="Só cartão"')}${I('cd4','Prazo de recebimento (dias)')}</div>`+I('cd5','Taxa de antecipação (%)','placeholder="Opcional"'),
+  usuarios:I('cd1','Nome *')+I('cd2','E-mail *')+Sel('cd3','Perfil *',S.role==='ADM'?['Administrativo','Gerente','Financeiro','Vistoriador']:['Financeiro','Vistoriador'])+ck,
+  empresas:I('cd1','Nome fantasia *')+I('cd2','CNPJ *')+`<div class="grid g2">${I('cd3','UF')}${Sel('cd4','Regime tributário',['Simples Nacional','Lucro Presumido','Lucro Real'])}</div>`,
+  plano:Sel('cd1','Grupo da conta',PLT.filter(r=>!r[2]).map(r=>r[0]+' '+r[1]))+I('cd2','Nome da conta *')}[t];
+ modal(`<div class="row" style="justify-content:space-between"><h2>${CADLBL[t]}</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>${body}<button class="btn" data-a="salvar-cad">Salvar</button>`,true)}
+function custoRow(){return `<div class="row cd-c" style="flex-wrap:nowrap;margin-bottom:6px"><input placeholder="Descrição" aria-label="Descrição do custo" style="min-height:44px;flex:2;border:1.5px solid #8EA097;border-radius:8px;padding:0 10px;min-width:0"><select aria-label="Tipo" style="min-height:44px;border:1.5px solid #8EA097;border-radius:8px"><option>R$</option><option>%</option></select><input placeholder="Valor" aria-label="Valor do custo" style="min-height:44px;flex:1;border:1.5px solid #8EA097;border-radius:8px;padding:0 10px;min-width:0"></div>`}
+V.fornecedores=()=>`<div class="head"><div><h1>Fornecedores</h1><p class="mut">Quem você paga: prestadores, órgãos, concessionárias e o franqueador. O cadastro vale para todas as lojas do grupo.</p></div><button class="btn" data-a="novo-forn">Novo fornecedor</button></div>
+ <div class="card"><div class="tw"><table><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Tipo</th><th>E-mail</th><th>Conta padrão</th><th class="num">A pagar em aberto</th></tr></thead><tbody>${FORN.map(f=>{const ab=PAG.filter(p=>p.forn===f[0]&&p.st!=='Pago').reduce((s,p)=>s+p.valor,0);return `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td><span class="pill p-open">${f[2]}</span></td><td>${f[3]}</td><td>${f[4]}</td><td class="num">${R(ab)}</td></tr>`}).join('')}</tbody></table></div></div>`;
+V.backoffice=()=>`<div class="bo-top"><div class="row" style="align-items:center"><b style="font-size:18px;color:var(--verde)">ECV Cash · Backoffice</b><span class="pill p-info">Sistema separado · 2FA ativo</span></div><div class="row" style="align-items:center"><span class="sm mut">Perfil interno: Plataforma</span><a href="#login" class="sm">Sair</a></div></div>
+ <main><div class="head"><div><h1>Grupos</h1><p class="mut">Crie e suspenda grupos e empresas, crie o primeiro Administrativo e dê suporte com acesso auditado.</p></div><button class="btn" data-a="novo-grupo">Novo grupo</button></div>
+ <div class="grid g3"><div class="card kpi"><div class="l">Grupos ativos</div><div class="v">${GRUPOS.filter(g=>g[3]==='Ativo').length}</div></div><div class="card kpi"><div class="l">Empresas (CNPJs)</div><div class="v">${GRUPOS.reduce((s,g)=>s+g[1],0)}</div></div><div class="card kpi"><div class="l">Usuários</div><div class="v">${GRUPOS.reduce((s,g)=>s+g[2],0)}</div></div></div>
+ <div class="card"><div class="tw"><table><thead><tr><th>Grupo</th><th class="num">Empresas</th><th class="num">Usuários</th><th>Situação</th><th>Criado em</th><th></th></tr></thead><tbody>${GRUPOS.map((g,i)=>`<tr><td><b>${g[0]}</b></td><td class="num">${g[1]}</td><td class="num">${g[2]}</td><td>${g[3]==='Ativo'?'<span class="pill p-ok">✓ Ativo</span>':'<span class="pill p-venc">! Suspenso</span>'}</td><td>${g[4]}</td>
+ <td><div class="row"><button class="btn sec sm2" data-a="entrar-como" data-v="${i}">Entrar como</button><button class="btn sec sm2" data-a="susp" data-v="${i}">${g[3]==='Ativo'?'Suspender':'Reativar'}</button></div></td></tr>`).join('')}</tbody></table></div></div>
+ <div class="card"><h3>Acessos de suporte recentes</h3><p class="sm mut" style="margin-top:6px">26/10 14:12 · Suporte · Rede Vistoria Sul · “Cliente não consegue baixar fatura” · 30 min<br>22/10 09:40 · Suporte · Grupo Alfa ECV · “Conferir cadastro de preços” · 30 min</p><p class="sm mut" style="margin-top:6px">Todo “entrar como” exige motivo, tem prazo curto e aparece no log do cliente.</p></div></main>`;
+
+V.login=()=>`<div class="login"><div class="card"><div class="logo" style="padding:0"><i>EC</i><span>ECV Cash<small>Confiança que aproxima.</small></span></div><h2>Entrar</h2>
+ <div class="fld"><label for="l-e">E-mail</label><input id="l-e" value="gerente@lojacentro.com.br"></div><div class="fld"><label for="l-s">Senha</label><input id="l-s" type="password" value="senha-exemplo"></div>
+ <a href="#dashboard" class="btn" style="text-decoration:none">Entrar</a><a href="#login" class="sm">Esqueci minha senha</a><p class="sm mut">Logo oficial do ECV Cash entra no lugar do marcador quando o arquivo vetorial estiver disponível.</p></div></div>`;
+
+/* ---------- shell e roteamento ---------- */
+function route(){return (location.hash||'#dashboard').slice(1)}
+function render(){
+  const r=route(),app=$('#app');
+  if(r==='login'){app.innerHTML=V.login();return}
+  if(r==='backoffice'){app.innerHTML=`<div class="proto"><b>Protótipo de baixa fidelidade</b><span>Dados de exemplo.</span><a href="#dashboard" style="color:inherit">Voltar ao sistema do cliente</a></div>${V.backoffice()}`;return}
+  const permit=MENU.filter(m=>m.r.includes(S.role));
+  if(!permit.find(m=>m.id===r)){location.hash='#'+permit[0].id;return}
+  if(!empList().includes(S.emp))S.emp=empList()[0];
+  applyBrand();
+  app.innerHTML=`<div class="proto"><b>Protótipo de baixa fidelidade · dados de exemplo</b>
+   <label>Ver como: <select id="p-role" aria-label="Ver como perfil">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}"${k===S.role?' selected':''}>${v}</option>`).join('')}</select></label>
+   <a href="#backoffice" style="color:inherit">Abrir backoffice</a><a href="#login" style="color:inherit">Tela de login</a></div>
+  ${S.imp?`<div class="imp"><span>Suporte: acessando <b>${S.imp.g}</b> · motivo: ${S.imp.m} · expira em 30 min</span><button data-a="sair-imp">Encerrar acesso</button></div>`:''}
+  <div class="shell"><aside class="side"><div class="logo"><i>${S.brand.logo?'':'EC'}</i><span>ECV Cash<small>${S.brand.escopo==='Grupo'?'Rede Vistoria Sul':S.brand.escopo}</small></span></div>
+   <nav class="nav" aria-label="Menu principal">${permit.map(m=>`<a href="#${m.id}"${m.id===r?' aria-current="page"':''}>${ic(m.i)}${m.l}</a>`).join('')}</nav>
+   <div class="foot"><span class="sm mut">Desenvolvido por</span><img src="${REDBOX}" alt="REDBOX"><a href="#login">Sair</a></div></aside>
+  <div class="mainwrap"><header class="top"><div><label for="p-emp">Empresa ativa</label><select id="p-emp">${empList().map(k=>`<option value="${k}"${k===S.emp?' selected':''}>${EMP[k].n}</option>`).join('')}</select></div>
+   <div class="user"><div class="av">${S.role}</div><div><b>${ {ADM:'Marina Alves',GER:'Rafael Costa',FIN:'Juliana Prado',VIS:'Ana Souza'}[S.role]}</b><span class="mut sm">${ROLES[S.role]}</span></div></div></header>
+   <main><div class="${['laudo','clientes','aparencia'].includes(r)?'narrow':''}" style="display:flex;flex-direction:column;gap:24px">${V[r]()}</div></main></div></div>`;
+  if(r==='dashboard')initLine();
+}
+window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
+
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='p-role'){S.role=t.value;S.sel.clear();S.selF.clear();S.emp=empList()[0];render()}
+  else if(t.id==='p-emp'){S.emp=t.value;render()}
+  else if(t.dataset.lote!==undefined){const i=t.dataset.lote,tr=t.closest('tr'),c=tr.querySelector('[data-k=c]').value,s=tr.querySelector('[data-k=s]').value,p=(CLIENTES[c]||{})[s];
+    const cell=$('#lv'+i);cell.innerHTML=p===undefined?'<input aria-label="Preço manual" placeholder="Informe" style="width:84px;min-height:36px;border:1.5px solid #C9A24B;background:#FFF3D9;border-radius:8px;padding:0 8px;text-align:right">':R(p)}
+  else if(t.dataset.in==='cliente'||t.dataset.in==='serv'||t.dataset.in==='forma'||t.dataset.in==='vist'){L[t.dataset.in]=t.value;updLaudo()}
+  else if(t.dataset.ff){S.ff[t.dataset.ff]=t.value;S.selF.clear();render()}
+  else if(t.dataset.in==='escopo'){S.brand.escopo=t.value;render()}
+  else if(t.dataset.in==='cor'){S.brand.cor=t.value;render()}
+  else if(t.dataset.in==='logo'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{S.brand.logo=fr.result;render()};fr.readAsDataURL(t.files[0])}
+});
+document.addEventListener('input',e=>{const t=e.target,k=t.dataset.in;
+  if(k==='placa'){t.value=t.value.toUpperCase().replace(/[^A-Z0-9-]/g,'');L.placa=t.value;updLaudo()}
+  else if(['manual','desc','num','obs'].includes(k)){L[k]=t.value;if(k==='manual'||k==='desc')updLaudo(true)}
+  else if(k==='contado'){const v=parseFloat(t.value.replace('.','').replace(',','.'))||0,d=v-3420,b=$('#c-dif');
+    b.className='msg '+(d===0?'ok':'warn');b.innerHTML=d===0?'<span aria-hidden="true">✓</span><div>Sem diferença.</div>':`<span aria-hidden="true">!</span><div>Diferença de <b>${R(d)}</b>. Informe o motivo ao fechar.</div>`}
+});
+function drawerPagar(){const d=DRAFT||{};
+ modal(`<div class="row" style="justify-content:space-between"><h2>Novo título a pagar</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>
+ <div class="fld"><label for="np1">Descrição *</label><input id="np1" value="${d.d||''}"></div>
+ <div class="fld"><label for="np2">Fornecedor *</label><div class="row" style="flex-wrap:nowrap;align-items:stretch"><select id="np2" style="flex:1">${FORN.map(f=>`<option${f[0]===d.f?' selected':''}>${f[0]}</option>`).join('')}</select><button class="btn sec" type="button" data-a="forn-do-titulo" style="white-space:nowrap">+ Novo fornecedor</button></div><small>Não achou? Cadastre aqui e volte para este título.</small></div>
+ <div class="fld"><label for="np3">Conta do plano *</label><select id="np3">${PLANO.map(c=>`<option${c===d.c?' selected':''}>${c}</option>`).join('')}</select></div>
+ <div class="grid g2"><div class="fld"><label for="np4">Vencimento *</label><input id="np4" value="${d.v||'05/11/2026'}"></div><div class="fld"><label for="np5">Valor (R$) *</label><input id="np5" value="${d.x||''}"></div></div>
+ <div class="fld"><label for="np6">Repetir</label><select id="np6"><option${d.r==='Não repetir'?' selected':''}>Não repetir</option><option${d.r==='Todo mês'?' selected':''}>Todo mês</option></select></div>
+ <div class="fld"><label for="np7">Comprovante</label><input id="np7" type="file"></div><button class="btn" data-a="salvar-pagar">Salvar título</button>`,true)}
+function modalForn(doTitulo){
+ modal(`<div class="row" style="justify-content:space-between"><h2>Novo fornecedor</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>
+ <div class="fld"><label for="fn1">Nome ou razão social *</label><input id="fn1"></div>
+ <div class="grid g2"><div class="fld"><label for="fn2">CPF ou CNPJ *</label><input id="fn2" placeholder="Somente números"></div><div class="fld"><label for="fn3">Tipo</label><select id="fn3"><option>Fornecedor</option><option>Prestador</option><option>Concessionária</option><option>Órgão público</option><option>Franqueador</option></select></div></div>
+ <div class="fld"><label for="fn4">E-mail</label><input id="fn4" placeholder="Opcional"></div>
+ <div class="fld"><label for="fn5">Conta padrão do plano</label><select id="fn5">${PLANO.map(c=>`<option>${c}</option>`).join('')}</select><small>Vem preenchida nos próximos títulos deste fornecedor.</small></div>
+ <button class="btn" data-a="salvar-forn" data-v="${doTitulo?1:0}">Salvar fornecedor</button>`,!doTitulo)}
+function updLaudo(soft){const p=laudoPanel();const el=$('#lpanel');if(!el)return;
+  if(soft){const a=document.activeElement,id=a&&a.id,pos=a&&a.selectionStart;el.innerHTML=p.html;if(id){const n=document.getElementById(id);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}}
+  else{if(['cliente','serv'].includes(document.activeElement.dataset.in)||true){el.innerHTML=p.html}}
+  const pm=$('#placa-m'),pl=$('#f-placa');if(pm&&pl){pm.textContent=p.pm?'Placa inválida. Confira as letras e os números.':'Aceita placa antiga e Mercosul.';pm.style.color=p.pm?'var(--erro)':'';pl.classList.toggle('bad',!!p.pm)}
+  const b=$('#b-lan');if(b)b.disabled=!!(p.dup&&!can('desconto'))}
+
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v;
+  if(a==='fechar-bg'){if(e.target===el)fechar();return}
+  if(a==='fechar'){fechar();return}
+  if(a==='tab-laudo'){S.tab.laudo=v;render()}
+  else if(a==='tab-rel'){S.tab.rel=v;render()}
+  else if(a==='ff-limpar'){S.ff={cli:'Todos',por:'venc',de:'',ate:'',st:'Todas'};S.selF.clear();render()}
+  else if(a==='ff-preset'){const F=S.ff;if(v==='mes'){F.de='2026-10-01';F.ate='2026-10-31';F.st='Todas'}else if(v==='30'){F.de='2026-09-27';F.ate='2026-10-27';F.st='Todas'}else{F.de='';F.ate='';F.st='Vencidas'}S.selF.clear();render()}
+  else if(a==='contas'){drawerContas(v)}
+  else if(a==='toggle-conta'){const c=BANK[S.contaEmp][+v];if(S.role==='ADM')confirmaConta('toggle',+v);else{c.pend={fatura:!c.fatura,por:NOME[S.role]};LOGC.unshift(['27/10/2026 17:20',NOME[S.role],S.contaEmp,'Pediu para '+(c.pend.fatura?'mostrar':'tirar')+' a conta '+c.banco+' na fatura']);toast('Pedido enviado. O Administrativo recebeu um e-mail para confirmar.');drawerContas(S.contaEmp)}}
+  else if(a==='aprovar-conta'){confirmaConta('aprovar',+v)}
+  else if(a==='copy-pix'){const t=$('#pixcode').textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Código PIX copiado.')).catch(()=>toast('Selecione o código e copie com Ctrl+C.'))}
+  else if(a==='conf-conta'){if(!$('#cf-s').value.trim()){toast('Digite sua senha para confirmar.');return}
+    const F=S.cf,e=F.emp;let txt;
+    if(F.kind==='nova'){BANK[e].push(F.nova);txt='Cadastrou a conta '+F.nova.banco+' e marcou para aparecer na fatura'}
+    else if(F.kind==='toggle'){const c=BANK[e][F.idx];c.fatura=!c.fatura;txt='Conta '+c.banco+(c.fatura?' passou a aparecer':' deixou de aparecer')+' na fatura'}
+    else{const c=BANK[e][F.idx];c.fatura=c.pend.fatura;txt='Aprovou o pedido de '+c.pend.por+': conta '+c.banco+(c.fatura?' passa a aparecer':' deixa de aparecer')+' na fatura';delete c.pend}
+    LOGC.unshift(['27/10/2026 17:22',NOME[S.role],e,txt]);S.contaEmp=e;drawerContas(e);render();toast('Alteração aplicada. Aviso enviado por e-mail ao Administrativo e ao financeiro da loja.')}
+  else if(a==='salvar-conta'){const g=i=>$('#ct'+i).value.trim();if(!g(5)||!g(6)){toast('Informe o titular e o CPF ou CNPJ.');return}
+    if(!((g(2)&&g(3))||g(8))){toast('Informe agência e conta, ou a chave PIX.');return}
+    const nova={banco:g(1),ag:g(2),cc:g(3),tipo:g(4),titular:g(5),doc:g(6),pixT:g(8)?g(7):'',pix:g(8),fatura:$('#ct9').checked},e=S.contaEmp;
+    if(S.role==='GER'){const q=nova.fatura;nova.fatura=false;nova.pend={fatura:q,por:NOME[S.role]};BANK[e].push(nova);LOGC.unshift(['27/10/2026 17:20',NOME[S.role],e,'Cadastrou a conta '+nova.banco+(q?' e pediu para mostrar na fatura':'')]);toast('Conta enviada para confirmação do Administrativo. Ela só aparece na fatura depois.');drawerContas(e);render()}
+    else if(nova.fatura){confirmaConta('nova',null,nova)}
+    else{BANK[e].push(nova);LOGC.unshift(['27/10/2026 17:20',NOME[S.role],e,'Cadastrou a conta '+nova.banco]);toast('Conta salva e registrada no log.');drawerContas(e);render()}}
+  else if(a==='tab-cad'){S.tab.cad=v;render()}
+  else if(a==='novo-cad'){modalCad()}
+  else if(a==='add-custo'){$('#cd-custos').insertAdjacentHTML('beforeend',custoRow())}
+  else if(a==='x-edit'){toast('Edição abre o mesmo formulário, com histórico de alterações.')}
+  else if(a==='salvar-cad'){const t=S.tab.cad||'servicos',g=i=>{const e=$('#cd'+i);return e?e.value.trim():''},lj=[...document.querySelectorAll('.cd-loja')].map((c,i)=>c.checked?(S.role==='ADM'?LOJAS:['Loja Centro'])[i]:null).filter(Boolean);
+    if(!g(t==='plano'?2:1)){toast('Informe o nome.');return}
+    if(t==='servicos'){const cu=[...document.querySelectorAll('.cd-c')].map(r=>{const i=r.querySelectorAll('input,select');return [i[0].value.trim(),i[1].value,parseFloat(i[2].value.replace(',','.'))||0,'Não']}).filter(c=>c[0]);SERVS.push([g(1),g(2)||'—',g(3),cu,true])}
+    else if(t==='vistoriadores')VISTS.push([g(1),'***.'+(g(2).replace(/\D/g,'').slice(3,6)||'000')+'.***-00',lj,$('#cd4').checked?'Sim':'Não','—']);
+    else if(t==='formas')FPGS.push([g(1),g(2),g(2)==='Faturado'?'Sim':'Não',g(3)?g(3)+'% · D+'+(g(4)||'0')+(g(5)?' · antecipação '+g(5)+'%':''):'—']);
+    else if(t==='usuarios')USERS.push([g(1),g(2),g(3),lj.length===4?'Todas as lojas':lj.join(', '),'Não']);
+    else if(t==='empresas'){EMPS.push([g(1),g(2),g(3)||'—',g(4)]);BANK[g(1)]=[]}
+    else if(t==='plano')PLT.push([g(1).split(' ')[0]+'.9',g(2),1]);
+    fechar();toast(t==='usuarios'?'Usuário criado. Convite enviado por e-mail.':'Cadastro salvo e registrado no log.');render()}
+  else if(a==='dre'){S.tab.dre=v;render()}
+  else if(a==='lancar'){const p=laudoPanel();
+    if(!okPlaca(L.placa)){toast('Informe uma placa válida.');$('#f-placa').focus();return}
+    if(p.man&&!(p.tot>0)){toast('Informe o preço manual.');return}
+    LAUDOS.unshift({h:'17:05',placa:L.placa.replace('-',''),cliente:L.cliente,serv:L.serv,vist:L.vist,forma:L.forma,valor:p.tot,manual:p.man});
+    L.placa='';L.manual='';L.desc=0;L.num='';L.obs='';toast('Laudo lançado.');render();setTimeout(()=>{const f=$('#f-placa');if(f)f.focus()},0)}
+  else if(a==='lote'){toast('Lote lançado. Laudos sem placa foram ignorados.')}
+  else if(a==='sel'){const i=+v;S.sel.has(i)?S.sel.delete(i):S.sel.add(i);render()}
+  else if(a==='sel-all'){const all=T.filter(t=>t.saldo>0);S.sel.size===all.length?S.sel.clear():all.forEach(t=>S.sel.add(t.id));render()}
+  else if(a==='baixar')drawerBaixa();
+  else if(a==='conf-baixa'){fechar();T.filter(t=>S.sel.has(t.id)).forEach(t=>t.saldo=0);S.sel.clear();toast('Baixa registrada. Lançamento de caixa gerado.');render()}
+  else if(a==='fat'){S.fat=v;render()}
+  else if(a==='selF'){S.selF.has(v)?S.selF.delete(v):S.selF.add(v);render()}
+  else if(a==='selF-all'){{const L2=fatFiltradas();S.selF.size===L2.length?S.selF.clear():L2.forEach(f=>S.selF.add(f.n));render()}}
+  else if(a==='baixa-fat'||a==='baixa-fat1'){if(a==='baixa-fat1'){S.selF.clear();S.selF.add(v)}
+    const fs=FAT.filter(f=>S.selF.has(f.n)),tot=fs.reduce((s,f)=>s+f.saldo+(f.venc<HOJE?f.saldo*(.02+.01*dias(f.venc,HOJE)/30):0),0);
+    modal(`<div class="row" style="justify-content:space-between"><h2>Baixar ${fs.length} fatura(s)</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>
+    <div class="card line">${fs.map(f=>`<div class="row" style="justify-content:space-between"><span>${f.n} · ${f.cliente}</span><b class="num">${R(f.saldo)}</b></div>`).join('')}<hr style="border:0;border-top:1px solid var(--borda);margin:8px 0"><div class="row" style="justify-content:space-between"><b>Total com juros e multa</b><b class="num" style="color:var(--verde)">${R(tot)}</b></div></div>
+    <div class="fld"><label for="bf-v">Valor recebido (R$)</label><input id="bf-v" value="${tot.toFixed(2).replace('.',',')}"><small>Parcial é aceito e rateado entre os laudos mais antigos primeiro.</small></div>
+    <div class="fld"><label for="bf-c">Conta financeira</label><select id="bf-c"><option>Banco Itaú · c/c 12345-6</option><option>Caixa Loja Centro</option></select></div>
+    <button class="btn" data-a="conf-fat">Confirmar baixa</button>`,true)}
+  else if(a==='conf-fat'){FAT.filter(f=>S.selF.has(f.n)).forEach(f=>f.saldo=0);S.selF.clear();fechar();toast('Faturas baixadas. Títulos dos laudos quitados.');render()}
+  else if(a==='gerar-faturas'){toast('3 faturas geradas para os clientes com fechamento hoje.')}
+  else if(a==='pdf'){toast('PDF da fatura gerado com o logo da loja.')}
+  else if(a==='email'){toast('E-mail de cobrança enviado para financeiro@autocenterpremium.com.br')}
+  else if(a==='exp'){toast('Exportação em '+v+' registrada no log e enviada para download.')}
+  else if(a==='aprovar'){PAG[+v].st='Aprovado';toast('Pagamento aprovado.');render()}
+  else if(a==='pagar'){PAG[+v].st='Pago';toast('Pagamento registrado. Saída lançada no caixa.');render()}
+  else if(a==='novo-pagar'){DRAFT={};drawerPagar()}
+  else if(a==='novo-forn'){modalForn(false)}
+  else if(a==='forn-do-titulo'){DRAFT={d:$('#np1').value,c:$('#np3').value,v:$('#np4').value,x:$('#np5').value,r:$('#np6').value};modalForn(true)}
+  else if(a==='salvar-forn'){const n=$('#fn1').value.trim(),d=$('#fn2').value.trim();if(!n||!d){toast('Informe o nome e o CPF ou CNPJ.');return}
+    FORN.push([n,d,$('#fn3').value,$('#fn4').value||'—',$('#fn5').value]);DRAFT.f=n;toast('Fornecedor cadastrado.');if(el.dataset.v==='1'){drawerPagar()}else{fechar();render()}}
+  else if(a==='x-novo-pagar-old'){modal(`<div class="row" style="justify-content:space-between"><h2>Novo título a pagar</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>
+    <div class="fld"><label for="np1">Descrição *</label><input id="np1"></div><div class="fld"><label for="np2">Fornecedor *</label><select id="np2"><option>Imobiliária Prado</option><option>Detran</option><option>Papelaria Central</option></select></div>
+    <div class="fld"><label for="np3">Conta do plano *</label><select id="np3"><option>Despesas operacionais › Aluguel</option><option>Despesas operacionais › Administrativas</option></select></div>
+    <div class="grid g2"><div class="fld"><label for="np4">Vencimento *</label><input id="np4" value="05/11/2026"></div><div class="fld"><label for="np5">Valor (R$) *</label><input id="np5"></div></div>
+    <div class="fld"><label for="np6">Repetir</label><select id="np6"><option>Não repetir</option><option>Todo mês</option></select></div><div class="fld"><label for="np7">Comprovante</label><input id="np7" type="file"></div><button class="btn" data-a="salvar-pagar">Salvar título</button>`,true)}
+  else if(a==='salvar-pagar'){fechar();toast(can('aprovar')?'Título criado e aprovado.':'Título criado. Aguarda aprovação do Gerente.')}
+  else if(a==='fechar-caixa'){toast('Caixa do dia 27/10 fechado.')}
+  else if(a==='cli'){S.cli=v;render()}
+  else if(a==='novo-cli'||a==='novo-grupo'){const g=a==='novo-grupo';modal(`<div class="row" style="justify-content:space-between"><h2>${g?'Novo grupo':'Novo cliente'}</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div>
+    <div class="fld"><label for="n1">${g?'Nome do grupo':'Nome ou razão social'} *</label><input id="n1"></div><div class="fld"><label for="n2">${g?'CNPJ da primeira empresa':'CPF ou CNPJ'} *</label><input id="n2"></div>
+    <div class="fld"><label for="n3">${g?'E-mail do primeiro Administrativo':'E-mail de cobrança'} *</label><input id="n3"></div><button class="btn" data-a="${g?'salvar-grupo':'salvar-cli'}">Salvar</button>`)}
+  else if(a==='salvar-grupo'){const n=$('#n1').value.trim()||'Novo grupo';GRUPOS.unshift([n,1,1,'Ativo','27/10/2026']);fechar();toast('Grupo criado. Convite enviado ao primeiro Administrativo.');render()}
+  else if(a==='salvar-cli'){fechar();toast('Cliente cadastrado. Disponível para todas as lojas do grupo.')}
+  else if(a==='novo-preco'){modal(`<div class="row" style="justify-content:space-between"><h2>Cadastrar preço</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div><p class="mut sm">Vale para todas as lojas do grupo, a partir da data de início.</p>
+    <div class="fld"><label for="pp1">Serviço</label><select id="pp1">${SERV.map(s=>`<option${s===v?' selected':''}>${s}</option>`).join('')}</select></div><div class="grid g2"><div class="fld"><label for="pp2">Valor (R$) *</label><input id="pp2"></div><div class="fld"><label for="pp3">Início da vigência *</label><input id="pp3" value="27/10/2026"></div></div><button class="btn" data-a="salvar-preco">Salvar preço</button>`)}
+  else if(a==='reajustar'){modal(`<div class="row" style="justify-content:space-between"><h2>Reajustar ${v}</h2><button class="btn sec sm2" data-a="fechar">Fechar</button></div><div class="msg warn"><span aria-hidden="true">!</span><div>O novo valor passa a valer em <b>todas as lojas do grupo</b>. Laudos já lançados não mudam.</div></div>
+    <div class="grid g2"><div class="fld"><label for="rj1">Novo valor (R$) *</label><input id="rj1"></div><div class="fld"><label for="rj2">Início da vigência *</label><input id="rj2" value="01/11/2026"></div></div><div class="fld"><label for="rj3">Motivo *</label><input id="rj3"></div><button class="btn" data-a="salvar-preco">Confirmar reajuste</button>`)}
+  else if(a==='salvar-preco'){fechar();toast('Preço salvo. Histórico atualizado.')}
+  else if(a==='salvar-tema'){toast('Tema salvo para '+S.brand.escopo+'. Relatórios e faturas já usam a nova identidade.')}
+  else if(a==='reset-tema'){S.brand.cor='#104B3A';S.brand.logo=null;render()}
+  else if(a==='susp'){const g=GRUPOS[+v];g[3]=g[3]==='Ativo'?'Suspenso':'Ativo';toast(g[3]==='Suspenso'?'Grupo suspenso. Usuários não conseguem entrar.':'Grupo reativado.');render()}
+  else if(a==='entrar-como'){const g=GRUPOS[+v][0];modal(`<h2>Entrar como ${g}</h2><p class="mut sm">O acesso é registrado no log do cliente, tem banner visível e expira em 30 minutos.</p>
+    <div class="fld"><label for="im">Motivo do acesso *</label><textarea id="im" data-in="imp" placeholder="Ex.: cliente não consegue baixar fatura (chamado 1234)"></textarea><small>Mínimo de 10 caracteres.</small></div>
+    <div class="row"><button class="btn" id="im-ok" data-a="conf-imp" data-v="${g}" disabled>Entrar</button><button class="btn sec" data-a="fechar">Cancelar</button></div>`)}
+  else if(a==='conf-imp'){S.imp={g:v,m:$('#im').value.trim()};S.role='ADM';fechar();location.hash='#dashboard';render()}
+  else if(a==='sair-imp'){S.imp=null;location.hash='#backoffice'}
+});
+document.addEventListener('input',e=>{if(e.target.id==='im'){$('#im-ok').disabled=e.target.value.trim().length<10}});
+render();
+</script>
