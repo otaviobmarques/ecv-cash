@@ -20,6 +20,12 @@ export class FiltroDeErros implements ExceptionFilter {
       this.log.warn(`Acesso negado pelo banco: ${(e as Error).message}`);
       return res.status(403).json({ mensagem: 'Você não tem permissão para esta ação.' });
     }
+    if (code === '23505') return res.status(409).json({ mensagem: 'Já existe um registro com estes dados.' });
+    if (code === '23P01') return res.status(409).json({ mensagem: 'Estes dados conflitam com um registro existente.' });
+    if (code === '23503' || code === '23514' || code === '22P02' || code === '22003') {
+      this.log.warn(`Dado recusado pelo banco (${code}): ${(e as Error).message}`);
+      return res.status(422).json({ mensagem: 'Um dos dados informados não é válido ou não está disponível. Confira e tente de novo.' });
+    }
     this.log.error(e instanceof Error ? e.stack ?? e.message : String(e));
     return res.status(500).json({ mensagem: 'Algo deu errado. Tente de novo em instantes.' });
   }

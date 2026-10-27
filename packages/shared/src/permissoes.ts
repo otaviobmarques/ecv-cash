@@ -41,13 +41,14 @@ export const MATRIZ = {
   'servico.editar': [A],
   'vistoriador.ver': [A, G, F],
   'vistoriador.editar': [A, G],
-  'forma_pagamento.ver': [A, G, F],
+  'forma_pagamento.ver': [A, G, F, V], // o Vistoriador precisa escolher a forma ao lançar; vê só o nome e o tipo
   'forma_pagamento.editar': [A],
   'forma_pagamento_empresa.editar': [A, G],
   'fornecedor.ver': [A, G, F],
   'fornecedor.editar': [A, G, F],
   'conta_financeira.ver': [A, G, F],
   'conta_financeira.editar': [A, G],
+  'conta_financeira.aprovar_alteracao': [A], // mudança em conta que aparece na fatura, com senha
   // Laudos
   'laudo.lancar': [A, G, V],
   'laudo.ver': [A, G, F],

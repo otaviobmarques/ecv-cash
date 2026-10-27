@@ -6,13 +6,17 @@ nada é excluído; datas de competência e de caixa separadas.
 ## Já no banco (migrações 0001 e 0002)
 `grupo`, `empresa`, `usuario` (`acesso_rede` = Administrativo), `usuario_empresa_perfil` (Gerente, Financeiro, Vistoriador por loja), `arquivo`,
 `tema` (grupo ou empresa), `sessao`, `login_tentativa`, `auditoria_log` (particionada), `usuario_interno`, `sessao_suporte`.
-Funções: `app_*()` (contexto), `auth_buscar_usuario`, `auth_buscar_sessao`, `auth_buscar_convite`, `auditoria_criar_particao`.
+Funções: `app_*()` (contexto), `auth_buscar_usuario`, `auth_buscar_sessao`, `auth_buscar_convite`, `auditoria_criar_particao`, `bo_listar_grupos`.
+Backoffice (migração 0003): `sessao_interna`, ticket de suporte em `sessao_suporte`, `sessao.sessao_suporte_id`.
+
+**Cadastros (migração 0004).** Do grupo, valem para todas as lojas: `plano_conta`, `servico`, `servico_custo`, `fornecedor`, `cliente`, `cliente_preco`, `forma_pagamento`.
+Da loja (isolamento por loja): `forma_pagamento_empresa`, `vistoriador` (visível pela lotação) e `vistoriador_empresa`, `conta_financeira`, `conta_financeira_pedido`.
+- `cliente_preco`: vigências nunca se sobrepõem (`EXCLUDE ... gist`) e um preço gravado não muda (gatilho): só dá para encerrar a vigência. Reajuste = encerrar na véspera e abrir a nova.
+- `conta_financeira`: a conta que aparece na fatura (`exibir_na_fatura`) só existe completa (CHECK no banco). Mudança em conta exibida passa por `conta_financeira_pedido` e confirmação do Administrativo com senha.
+- Todo grupo novo recebe o plano de contas e as formas de pagamento padrão (`semearPadroes`).
 
 ## Planejado (por módulo)
-- **Cadastros:** `cliente` (periodicidade, prazo, multa, juros), `cliente_preco` (vigência; `EXCLUDE` impede sobreposição), `servico`, `servico_custo`,
-  `vistoriador`, `vistoriador_empresa`, `forma_pagamento`, `forma_pagamento_empresa` (taxa, prazo, antecipação), `fornecedor`,
-  `conta_financeira` (caixa/banco; **banco, agência, conta, tipo, titular, documento, chave PIX, `exibir_na_fatura`**, pedido de alteração pendente),
-  `plano_conta`, `aliquota_imposto`.
+- **Cadastros que faltam:** `aliquota_imposto`.
 - **Laudos:** `laudo` (snapshots de preço de tabela, preço cobrado, desconto, `preco_manual`; status ativo/cancelado), `laudo_custo`, `laudo_comissao`,
   `regra_comissao`, `fechamento_comissao`, `regra_repasse`, `repasse_apuracao`.
 - **Receber e faturas:** `titulo_receber` (1:1 com laudo), `baixa_receber` (imutável, `estorno_de`), `baixa_lote`, `fatura` (empresa × cliente × período),

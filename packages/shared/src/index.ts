@@ -7,3 +7,5 @@ export * from './documentos';
 export * from './schemas';
 export * from './interno';
 export * from './schemas-interno';
+export * from './cadastros';
+export * from './schemas-cadastros';

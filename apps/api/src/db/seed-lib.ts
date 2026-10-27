@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DbService } from './db.service';
 import { hashSenha } from '../auth/senha';
+import { semearPadroes } from '../cadastros/padroes';
 
 export interface SeedEmpresa { nome: string; cnpj: string }
 export interface SeedUsuario { nome: string; email: string; senha: string; perfil: 'ADMINISTRATIVO' | 'GERENTE' | 'FINANCEIRO' | 'VISTORIADOR'; lojas?: number[] }
@@ -15,6 +16,7 @@ export async function criarGrupoCompleto(db: DbService, o: { nome: string; empre
   const hashes = await Promise.all(o.usuarios.map((u) => hashSenha(u.senha)));
   const empresaIds = await db.tenant({ grupoId, rede: true, empresas: [] }, async (c) => {
     await c.query('INSERT INTO grupo (id, nome) VALUES ($1,$2)', [grupoId, o.nome]);
+    await semearPadroes(c, grupoId);
     const ids: string[] = [];
     for (const e of o.empresas) {
       const id = randomUUID();

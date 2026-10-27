@@ -102,4 +102,75 @@ describe('isolamento no banco (RLS)', () => {
       db.tenant({ grupoId: cen.A.grupoId, rede: true, empresas: [] }, (c) => c.query(`INSERT INTO grupo (id, nome) VALUES ($1, 'intruso')`, [id])),
     ).rejects.toMatchObject({ code: '42501' });
   });
+
+  describe('tabelas de cadastro', () => {
+    const TABELAS = ['plano_conta', 'servico', 'fornecedor', 'servico_custo', 'cliente', 'cliente_preco', 'forma_pagamento', 'forma_pagamento_empresa',
+      'vistoriador', 'vistoriador_empresa', 'conta_financeira', 'conta_financeira_pedido'];
+    const rede = (g: string) => ({ grupoId: g, rede: true, empresas: [] as string[] });
+
+    it('o grupo B não enxerga nada do grupo A, e sem contexto nada aparece, em todas as tabelas', async () => {
+      const [a1, a2] = cen.A.empresaIds;
+      await db.tenant(rede(cen.A.grupoId), async (c) => {
+        const cli = (await c.query(`INSERT INTO cliente (grupo_id, tipo_pessoa, nome) VALUES ($1,'PJ','Cliente do A') RETURNING id`, [cen.A.grupoId])).rows[0].id;
+        const srv = (await c.query(`INSERT INTO servico (grupo_id, nome) VALUES ($1,'Serviço do A') RETURNING id`, [cen.A.grupoId])).rows[0].id;
+        await c.query(`INSERT INTO cliente_preco (grupo_id, cliente_id, servico_id, valor_centavos, vigencia_ini) VALUES ($1,$2,$3,1000,'2026-01-01')`, [cen.A.grupoId, cli, srv]);
+        await c.query(`INSERT INTO fornecedor (grupo_id, nome) VALUES ($1,'Fornecedor do A')`, [cen.A.grupoId]);
+        await c.query(`INSERT INTO servico_custo (grupo_id, servico_id, descricao, tipo, valor_centavos) VALUES ($1,$2,'Taxa','VALOR',100)`, [cen.A.grupoId, srv]);
+        const forma = (await c.query(`INSERT INTO forma_pagamento (grupo_id, nome, tipo) VALUES ($1,'Forma do A','OUTRA') RETURNING id`, [cen.A.grupoId])).rows[0].id;
+        await c.query(`INSERT INTO forma_pagamento_empresa (grupo_id, forma_id, empresa_id, taxa_bp) VALUES ($1,$2,$3,100)`, [cen.A.grupoId, forma, a1]);
+        const vis = (await c.query(`INSERT INTO vistoriador (grupo_id, nome) VALUES ($1,'Vistoriador do A') RETURNING id`, [cen.A.grupoId])).rows[0].id;
+        await c.query(`INSERT INTO vistoriador_empresa (vistoriador_id, empresa_id, grupo_id) VALUES ($1,$2,$3)`, [vis, a1, cen.A.grupoId]);
+        const conta = (await c.query(`INSERT INTO conta_financeira (grupo_id, empresa_id, nome, tipo) VALUES ($1,$2,'Caixa A1','CAIXA') RETURNING id`, [cen.A.grupoId, a1])).rows[0].id;
+        await c.query(`INSERT INTO conta_financeira_pedido (grupo_id, empresa_id, conta_id, dados, solicitado_por) VALUES ($1,$2,$3,'{}',$4)`, [cen.A.grupoId, a1, conta, cen.A.usuarioIds[1]]);
+        await c.query(`INSERT INTO conta_financeira (grupo_id, empresa_id, nome, tipo) VALUES ($1,$2,'Caixa A2','CAIXA')`, [cen.A.grupoId, a2]);
+      });
+      for (const t of TABELAS) {
+        const grupos = async (g: string) => (await db.tenant(rede(g), (c) => c.query(`SELECT DISTINCT grupo_id FROM ${t}`))).rows.map((r) => r.grupo_id);
+        expect(await grupos(cen.A.grupoId), `${t} no grupo A`).toEqual([cen.A.grupoId]);
+        expect((await grupos(cen.B.grupoId)).filter((g) => g === cen.A.grupoId), `${t} no grupo B`).toEqual([]);
+        const semContexto = await db.semTenant(async (c) => Number((await c.query(`SELECT count(*) AS n FROM ${t}`)).rows[0].n));
+        expect(semContexto, `${t} sem contexto`).toBe(0);
+      }
+    });
+
+    it('usuário de loja só enxerga as contas, vistoriadores e taxas da própria loja', async () => {
+      const [a1, a2] = cen.A.empresaIds;
+      await db.tenant(rede(cen.A.grupoId), async (c) => {
+        const vis2 = (await c.query(`INSERT INTO vistoriador (grupo_id, nome) VALUES ($1,'Só da loja 2') RETURNING id`, [cen.A.grupoId])).rows[0].id;
+        await c.query(`INSERT INTO vistoriador_empresa (vistoriador_id, empresa_id, grupo_id) VALUES ($1,$2,$3)`, [vis2, a2, cen.A.grupoId]);
+      });
+      const loja1 = { grupoId: cen.A.grupoId, rede: false, empresas: [a1!] };
+      const contas = await db.tenant(loja1, (c) => c.query('SELECT empresa_id FROM conta_financeira'));
+      expect(new Set(contas.rows.map((r) => r.empresa_id))).toEqual(new Set([a1]));
+      const vist = await db.tenant(loja1, (c) => c.query('SELECT nome FROM vistoriador'));
+      expect(vist.rows.map((r) => r.nome)).toContain('Vistoriador do A');
+      expect(vist.rows.map((r) => r.nome)).not.toContain('Só da loja 2');
+      const pedidos = await db.tenant({ grupoId: cen.A.grupoId, rede: false, empresas: [a2!] }, (c) => c.query('SELECT 1 FROM conta_financeira_pedido'));
+      expect(pedidos.rowCount).toBe(0); // o pedido é da loja 1
+      // cliente, serviço e preço são do grupo: a loja vê
+      const clientes = await db.tenant(loja1, (c) => c.query('SELECT nome FROM cliente'));
+      expect(clientes.rows.map((r) => r.nome)).toContain('Cliente do A');
+    });
+
+    it('a aplicação não apaga nada de cadastro, só a lotação do vistoriador', async () => {
+      for (const t of TABELAS.filter((x) => x !== 'vistoriador_empresa')) {
+        await expect(db.tenant(rede(cen.A.grupoId), (c) => c.query(`DELETE FROM ${t}`)), t).rejects.toMatchObject({ code: '42501' });
+      }
+    });
+
+    it('chave estrangeira composta impede ligar cadastros de grupos diferentes', async () => {
+      const [a1] = cen.A.empresaIds;
+      // cliente e serviço do A sem nenhum preço, para a chave estrangeira ser a única barreira
+      const { clienteA, servicoA } = await db.tenant(rede(cen.A.grupoId), async (c) => ({
+        clienteA: (await c.query(`INSERT INTO cliente (grupo_id, tipo_pessoa, nome) VALUES ($1,'PJ','Cliente sem preço do A') RETURNING id`, [cen.A.grupoId])).rows[0].id,
+        servicoA: (await c.query(`INSERT INTO servico (grupo_id, nome) VALUES ($1,'Serviço sem preço do A') RETURNING id`, [cen.A.grupoId])).rows[0].id,
+      }));
+      // preço no grupo B apontando para cliente e serviço do grupo A
+      await expect(db.tenant(rede(cen.B.grupoId), (c) => c.query(
+        `INSERT INTO cliente_preco (grupo_id, cliente_id, servico_id, valor_centavos, vigencia_ini) VALUES ($1,$2,$3,1000,'2026-01-01')`, [cen.B.grupoId, clienteA, servicoA]))).rejects.toMatchObject({ code: '23503' });
+      // conta financeira do grupo B em empresa do grupo A
+      await expect(db.tenant(rede(cen.B.grupoId), (c) => c.query(
+        `INSERT INTO conta_financeira (grupo_id, empresa_id, nome, tipo) VALUES ($1,$2,'Invasora','CAIXA')`, [cen.B.grupoId, a1]))).rejects.toMatchObject({ code: '23503' });
+    });
+  });
 });

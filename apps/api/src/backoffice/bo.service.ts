@@ -7,6 +7,7 @@ import { ENV, Env } from '../config/env';
 import { Mailer } from '../mail/mailer';
 import { auditar } from '../common/auditoria';
 import { novoToken, sha256 } from '../auth/senha';
+import { semearPadroes } from '../cadastros/padroes';
 import type { AcessoInterno } from './bo-acesso';
 
 type CriarGrupo = z.infer<typeof criarGrupoSchema>;
@@ -46,6 +47,7 @@ export class BoService {
     const link = `${this.env.URL_APP}/convite?token=${token}`;
     await this.db.tenant(na(grupoId), async (c) => {
       await c.query('INSERT INTO grupo (id, nome) VALUES ($1,$2)', [grupoId, dto.nome]);
+      await semearPadroes(c, grupoId);
       try {
         await c.query(
           `INSERT INTO empresa (id, grupo_id, cnpj, razao_social, nome_fantasia, uf, cidade, regime, email_financeiro)

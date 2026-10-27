@@ -26,5 +26,8 @@ Idioma: tudo em português do Brasil (código de domínio, mensagens, commits). 
 11. **Convite**: enquanto não houver envio de e-mail (Fase 2), quem cria o convite recebe o link para entregar (`EXPOR_CONVITE=true`). Desligar quando o e-mail entrar.
 12. **Suporte ("entrar como")** grava toda ação com `usuario_interno_id`; no log o autor aparece como "Equipe ECV Cash: Nome", nunca como o usuário cliente.
 
+13. **Preço do cliente** nunca é editado: reajuste encerra a vigência anterior na véspera e abre outra (o banco impede sobreposição e alteração). Só o Administrativo reajusta; o Gerente cadastra o primeiro.
+14. **Conta que aparece na fatura**: qualquer mudança nos dados bancários, na chave PIX ou na visibilidade exige confirmação do Administrativo com senha; o pedido do Gerente fica pendente e a conta não muda até a aprovação.
+
 ## Estado
-Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Ver `docs/04-roadmap.md`.
+Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Cadastros: banco e API prontos, telas em andamento. Ver `docs/04-roadmap.md`.

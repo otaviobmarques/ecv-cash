@@ -14,7 +14,7 @@ Legenda: ✔ permitido · ◐ com condição · — sem acesso. Escopo: Administ
 | Log de auditoria | ✔ | ◐ própria loja | — | — |
 | Clientes | ✔ | ✔ | ver | ver nome |
 | Preço do cliente | ✔ reajusta | ◐ cadastra o primeiro | ver | ver no lançamento |
-| Serviços, formas de pagamento | ✔ | ver | ver | ver serviços |
+| Serviços, formas de pagamento | ✔ | ver | ver | ver só nome (serviço e forma, para lançar) |
 | Lançar laudo | ✔ | ✔ | — | ✔ |
 | Editar laudo | ✔ | ✔ | — | ◐ próprio, no dia, antes de faturar |
 | Desconto / alterar preço de tabela | ✔ | ✔ | — | — |

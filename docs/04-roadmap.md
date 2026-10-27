@@ -4,7 +4,8 @@
 - [x] **Fundação:** monorepo, banco multi-tenant com RLS, login, perfis, convite, auditoria, tema, testes de isolamento.
 - [x] Front-end base: shell, login, convite, troca de empresa, tokens ECV Cash, cor por cliente, empresas, usuários, auditoria. Falta: logotipo (envio de arquivo, depende do armazenamento S3).
 - [x] Backoffice: login com 2FA, grupos (criar, suspender, reativar), detalhe, log, redefinir acesso, "entrar como" auditado. Falta: criar empresas adicionais e gerir usuários internos pela tela.
-- [ ] Cadastros: clientes e preços (vigência), serviços e custos, vistoriadores, formas de pagamento, fornecedores, contas financeiras e bancárias, plano de contas.
+- [x] Cadastros, banco e API: clientes e preços (vigência), serviços e custos, vistoriadores, formas de pagamento (taxas por loja), fornecedores, contas financeiras e bancárias com confirmação, plano de contas.
+- [ ] Cadastros, telas.
 - [ ] Laudos: lançamento, lote, duplicidade, preço manual, desconto, cancelamento.
 - [ ] Contas a receber: título por laudo, baixa total e parcial, estorno.
 - [ ] Faturados: fatura por empresa × cliente × período, PDF, QR PIX, baixa em lote, juros e multa.

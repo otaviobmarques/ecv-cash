@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MATRIZ, PERFIS, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
-  normalizarPlaca, criarEmpresaSchema, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
+  normalizarPlaca, criarEmpresaSchema, clienteSchema, contaFinanceiraSchema, custoDoLaudo, diaAnterior, diaSeguinte, margemDoLaudo, precoSchema, servicoCustoSchema, PLANO_CONTAS_PADRAO, FORMAS_PAGAMENTO_PADRAO, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
 } from './index';
 
 describe('matriz de permissões (Etapa 5)', () => {
@@ -147,5 +147,68 @@ describe('documentos e placa', () => {
     expect(normalizarPlaca('RTX4F21')).toBe('RTX4F21');
     expect(normalizarPlaca('AB12345')).toBeNull();
     expect(normalizarPlaca('1BC1D23')).toBeNull();
+  });
+});
+
+describe('cadastros: custo, margem e vigência', () => {
+  it('custo fixo e percentual sobre o valor cobrado', () => {
+    expect(custoDoLaudo({ tipo: 'VALOR', valorCentavos: 3800 }, 18000)).toBe(3800);
+    expect(custoDoLaudo({ tipo: 'PERCENTUAL', percentualBp: 500 }, 18000)).toBe(900);
+    expect(custoDoLaudo({ tipo: 'PERCENTUAL', percentualBp: 333 }, 18000)).toBe(599); // 599,4 arredonda ao centavo
+  });
+  it('margem = cobrado − custos − comissão', () => {
+    expect(margemDoLaudo(18000, [3800, 600], 1440)).toBe(12160);
+  });
+  it('dia anterior e seguinte atravessam mês e ano', () => {
+    expect(diaAnterior('2026-11-01')).toBe('2026-10-31');
+    expect(diaAnterior('2026-01-01')).toBe('2025-12-31');
+    expect(diaSeguinte('2026-02-28')).toBe('2026-03-01');
+    expect(diaSeguinte('2028-02-28')).toBe('2028-02-29');
+  });
+  it('plano de contas padrão tem códigos únicos e pais coerentes', () => {
+    const codigos = PLANO_CONTAS_PADRAO.map((c) => c.codigo);
+    expect(new Set(codigos).size).toBe(codigos.length);
+    for (const c of PLANO_CONTAS_PADRAO.filter((x) => x.codigo.includes('.'))) {
+      expect(codigos, c.codigo).toContain(c.codigo.slice(0, c.codigo.lastIndexOf('.')));
+    }
+  });
+  it('formas padrão: só o Faturado gera fatura', () => {
+    expect(FORMAS_PAGAMENTO_PADRAO.filter((f) => f.geraFatura).map((f) => f.tipo)).toEqual(['FATURADO']);
+  });
+});
+
+describe('cadastros: validações', () => {
+  it('cliente PF exige CPF válido e PJ exige CNPJ válido; documento é opcional', () => {
+    const base = { nome: 'Fulano', emailsCobranca: [] };
+    expect(clienteSchema.safeParse({ ...base, tipoPessoa: 'PF', documento: '529.982.247-25' }).success).toBe(true);
+    expect(clienteSchema.safeParse({ ...base, tipoPessoa: 'PF', documento: '11222333000181' }).success).toBe(false);
+    expect(clienteSchema.safeParse({ ...base, tipoPessoa: 'PJ', documento: '11.222.333/0001-81' }).success).toBe(true);
+    expect(clienteSchema.safeParse({ ...base, tipoPessoa: 'PJ', documento: '' }).success).toBe(true);
+  });
+  it('cliente nasce com os padrões de fatura: mensal, 10 dias, multa 2%, juros 1% ao mês', () => {
+    const r = clienteSchema.parse({ nome: 'Fulano', tipoPessoa: 'PF' });
+    expect(r).toMatchObject({ periodicidade: 'MENSAL', prazoDias: 10, multaBp: 200, jurosMesBp: 100 });
+  });
+  it('custo por valor exige o valor; por percentual exige o percentual', () => {
+    expect(servicoCustoSchema.safeParse({ descricao: 'Taxa Detran', tipo: 'VALOR' }).success).toBe(false);
+    expect(servicoCustoSchema.safeParse({ descricao: 'Taxa Detran', tipo: 'VALOR', valorCentavos: 3800 }).success).toBe(true);
+    expect(servicoCustoSchema.safeParse({ descricao: 'Repasse', tipo: 'PERCENTUAL' }).success).toBe(false);
+  });
+  it('conta que aparece na fatura precisa estar completa e a chave PIX bater com o tipo', () => {
+    const base = { empresaId: '11111111-1111-1111-1111-111111111111', nome: 'Itaú', tipo: 'BANCO', exibirNaFatura: true };
+    const msgs = (v: object) => { const r = contaFinanceiraSchema.safeParse({ ...base, ...v }); return r.success ? [] : r.error.issues.map((i) => i.path[0]); };
+    expect(msgs({})).toEqual(expect.arrayContaining(['banco', 'titular', 'documentoTitular']));
+    const completa = { banco: 'Itaú (341)', titular: 'Centro Vistorias Ltda', documentoTitular: '11222333000181', agencia: '1234', conta: '12345-6' };
+    expect(msgs(completa)).toEqual([]);
+    expect(msgs({ ...completa, agencia: undefined, conta: undefined })).toContain('agencia');
+    expect(msgs({ ...completa, pixTipo: 'CNPJ', pixChave: '11222333000199' })).toContain('pixChave');
+    expect(msgs({ ...completa, pixTipo: 'CNPJ', pixChave: '11.222.333/0001-81' })).toEqual([]);
+    expect(msgs({ ...completa, pixTipo: 'EMAIL', pixChave: 'sem-arroba' })).toContain('pixChave');
+    expect(msgs({ ...completa, tipo: 'CAIXA' })).toContain('exibirNaFatura');
+  });
+  it('preço exige valor positivo; reajuste de preço usa centavos inteiros', () => {
+    expect(precoSchema.safeParse({ servicoId: '11111111-1111-1111-1111-111111111111', valorCentavos: 0 }).success).toBe(false);
+    expect(precoSchema.safeParse({ servicoId: '11111111-1111-1111-1111-111111111111', valorCentavos: 18000.5 }).success).toBe(false);
+    expect(precoSchema.safeParse({ servicoId: '11111111-1111-1111-1111-111111111111', valorCentavos: 18000, vigenciaIni: '2026-11-01' }).success).toBe(true);
   });
 });
