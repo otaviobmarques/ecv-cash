@@ -10,6 +10,9 @@ import { Empresas } from './paginas/Empresas';
 import { Usuarios } from './paginas/Usuarios';
 import { Aparencia } from './paginas/Aparencia';
 import { Auditoria } from './paginas/Auditoria';
+import { Clientes } from './paginas/Clientes';
+import { Fornecedores } from './paginas/Fornecedores';
+import { Cadastros } from './paginas/Cadastros';
 
 export function App() {
   const { data: eu, isLoading, isError } = useEu();
@@ -22,6 +25,9 @@ export function App() {
       <Route path="/suporte" element={<Suporte />} />
       <Route element={eu ? <Shell eu={eu} /> : <Navigate to="/login" replace />}>
         <Route index element={<Inicio />} />
+        <Route path="clientes" element={<Clientes />} />
+        <Route path="fornecedores" element={<Fornecedores />} />
+        <Route path="cadastros" element={<Cadastros />} />
         <Route path="empresas" element={<Empresas />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="aparencia" element={<Aparencia />} />

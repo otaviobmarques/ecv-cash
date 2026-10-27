@@ -1,15 +1,18 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ROTULO_PERFIL, type Permissao } from '@ecv/shared';
+import { ROTULO_PERFIL, type Perfil, type Permissao } from '@ecv/shared';
 import { Botao, Icone, aplicarTema, useToast, type NomeIcone } from '@ecv/ui';
 import { api } from './api';
 import { useSessao } from './sessao';
 import type { Empresa, Eu, TemaEfetivo } from './tipos';
 import redbox from './redbox.png';
 
-const MENU: { para: string; rotulo: string; icone: NomeIcone; perm?: Permissao; fim?: boolean }[] = [
+const MENU: { para: string; rotulo: string; icone: NomeIcone; perm?: Permissao; fim?: boolean; naoPara?: Perfil[] }[] = [
   { para: '/', rotulo: 'Início', icone: 'painel', fim: true },
+  { para: '/clientes', rotulo: 'Clientes e preços', icone: 'usuarios', perm: 'cliente.ver', naoPara: ['VISTORIADOR'] },
+  { para: '/fornecedores', rotulo: 'Fornecedores', icone: 'empresas', perm: 'fornecedor.ver' },
+  { para: '/cadastros', rotulo: 'Cadastros', icone: 'grupos', perm: 'servico.ver', naoPara: ['VISTORIADOR'] },
   { para: '/empresas', rotulo: 'Empresas', icone: 'empresas' },
   { para: '/usuarios', rotulo: 'Usuários', icone: 'usuarios', perm: 'usuario.gerir' },
   { para: '/aparencia', rotulo: 'Aparência', icone: 'aparencia', perm: 'tema.editar' },
@@ -37,7 +40,7 @@ export function Shell({ eu }: { eu: Eu }) {
     } catch (e) { avisar((e as Error).message, 'erro'); }
   };
   const ativa = empresas.data?.find((e) => e.id === eu.empresaAtivaId);
-  const itens = MENU.filter((m) => !m.perm || eu.permissoes.includes(m.perm));
+  const itens = MENU.filter((m) => (!m.perm || eu.permissoes.includes(m.perm)) && !(eu.perfilAtivo && m.naoPara?.includes(eu.perfilAtivo)));
   const iniciais = eu.nome.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
   return (

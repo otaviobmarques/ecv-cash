@@ -30,4 +30,4 @@ Idioma: tudo em português do Brasil (código de domínio, mensagens, commits). 
 14. **Conta que aparece na fatura**: qualquer mudança nos dados bancários, na chave PIX ou na visibilidade exige confirmação do Administrativo com senha; o pedido do Gerente fica pendente e a conta não muda até a aprovação.
 
 ## Estado
-Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Cadastros: banco e API prontos, telas em andamento. Ver `docs/04-roadmap.md`.
+Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Cadastros (banco, API e telas) concluídos. Próximo: lançamento de laudos. Ver `docs/04-roadmap.md`.

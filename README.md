@@ -3,7 +3,7 @@
 Sistema financeiro SaaS multiempresa para ECVs (Empresas Credenciadas de Vistoria): laudos, contas a receber e a pagar,
 faturados, caixa, relatórios e visão contábil/gerencial. Desenvolvido pela agência REDBOX.
 
-> Estado: **Fundação**, **app dos clientes** (login, empresas, usuários, aparência, auditoria) e **backoffice** (grupos, 2FA, suporte) prontos. Próximo módulo: cadastros e laudos.
+> Estado: **Fundação**, **app dos clientes** (login, empresas, usuários, aparência, auditoria), **backoffice** (grupos, 2FA, suporte) e **Cadastros** (clientes e preços, serviços e custos, fornecedores, vistoriadores, formas de pagamento, contas bancárias, plano de contas) prontos. Próximo módulo: lançamento de laudos.
 > Roadmap em [`docs/04-roadmap.md`](docs/04-roadmap.md).
 
 ## Documentação
@@ -38,7 +38,7 @@ Use sempre `localhost` no navegador (a API só aceita essa origem com cookie).
 **Primeiro usuário do backoffice** (equipe interna): `pnpm --filter @ecv/api bo:criar-interno "Seu Nome" voce@empresa.com PLATAFORMA`.
 Ele imprime uma senha provisória. No primeiro login o backoffice pede para ligar o aplicativo autenticador (2FA).
 
-**Verificação no navegador:** `pnpm e2e <senha provisória>` percorre criar grupo, convite, login, telas e suporte (ver `e2e/smoke.ts`).
+**Verificação no navegador:** `pnpm e2e <senha provisória>` percorre criar grupo, convite, login, telas e suporte (ver `e2e/smoke.ts`). `pnpm e2e:cadastros` percorre as telas de Cadastros com os dados do `db:seed` (ver `e2e/cadastros.ts`).
 
 ## Testes
 ```bash

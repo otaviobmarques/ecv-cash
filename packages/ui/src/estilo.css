@@ -24,7 +24,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.btn { min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1.5px solid var(--brand); background: var(--brand); color: var(--brand-ink); font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; justify-content: center; text-decoration: none; }
+.btn { white-space: nowrap; min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1.5px solid var(--brand); background: var(--brand); color: var(--brand-ink); font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; justify-content: center; text-decoration: none; }
 .btn:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
 .btn.sec { background: #fff; color: var(--verde); border-color: var(--verde); } .btn.sec:hover { background: var(--suave); }
 .btn.perigo { background: #fff; color: var(--erro); border-color: var(--erro); } .btn.perigo:hover { background: #FBE9E7; }
