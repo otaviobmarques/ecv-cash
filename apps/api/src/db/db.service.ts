@@ -1,5 +1,8 @@
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, types } from 'pg';
+
+// `date` volta como texto AAAA-MM-DD. O padrão da biblioteca cria um Date no fuso do servidor e a data pode escorregar um dia.
+types.setTypeParser(1082, (v: string) => v);
 import { ENV, Env } from '../config/env';
 
 /** O que o banco precisa saber para isolar os dados desta requisição (ver migração 0002). */

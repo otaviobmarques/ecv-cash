@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MATRIZ, PERFIS, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
-  normalizarPlaca, criarEmpresaSchema, clienteSchema, contaFinanceiraSchema, custoDoLaudo, diaAnterior, diaSeguinte, margemDoLaudo, precoSchema, servicoCustoSchema, PLANO_CONTAS_PADRAO, FORMAS_PAGAMENTO_PADRAO, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
+  normalizarPlaca, criarEmpresaSchema, descontoDoLaudo, laudoSchema, loteSchema, normalizarChassi, resolverPreco, clienteSchema, contaFinanceiraSchema, custoDoLaudo, diaAnterior, diaSeguinte, margemDoLaudo, precoSchema, servicoCustoSchema, PLANO_CONTAS_PADRAO, FORMAS_PAGAMENTO_PADRAO, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
 } from './index';
 
 describe('matriz de permissões (Etapa 5)', () => {
@@ -210,5 +210,46 @@ describe('cadastros: validações', () => {
     expect(precoSchema.safeParse({ servicoId: '11111111-1111-1111-1111-111111111111', valorCentavos: 0 }).success).toBe(false);
     expect(precoSchema.safeParse({ servicoId: '11111111-1111-1111-1111-111111111111', valorCentavos: 18000.5 }).success).toBe(false);
     expect(precoSchema.safeParse({ servicoId: '11111111-1111-1111-1111-111111111111', valorCentavos: 18000, vigenciaIni: '2026-11-01' }).success).toBe(true);
+  });
+});
+
+describe('laudos: preço, chassi e validações', () => {
+  it('com preço na tabela vale a tabela; outro valor exige motivo', () => {
+    expect(resolverPreco({ precoTabela: 18000 })).toEqual({ precoTabela: 18000, precoManual: false, valorCobrado: 18000, precisaMotivo: false });
+    expect(resolverPreco({ precoTabela: 18000, valorCobrado: 16500 })).toMatchObject({ valorCobrado: 16500, precisaMotivo: true });
+    expect(resolverPreco({ precoTabela: 18000, valorCobrado: 0 })).toMatchObject({ valorCobrado: 0, precisaMotivo: true });
+    expect(resolverPreco({ precoTabela: 18000, valorCobrado: -1 })).toEqual({ erro: 'VALOR_INVALIDO' });
+  });
+  it('sem preço o valor digitado é obrigatório e marca o laudo como preço manual', () => {
+    expect(resolverPreco({ precoTabela: null })).toEqual({ erro: 'SEM_PRECO' });
+    expect(resolverPreco({ precoTabela: null, valorManual: 0 })).toEqual({ erro: 'SEM_PRECO' });
+    expect(resolverPreco({ precoTabela: null, valorManual: 14000 })).toEqual({ precoTabela: null, precoManual: true, valorCobrado: 14000, precisaMotivo: false });
+  });
+  it('desconto é tabela menos cobrado; acréscimo é negativo; sem tabela não há desconto', () => {
+    expect(descontoDoLaudo(18000, 16500)).toBe(1500);
+    expect(descontoDoLaudo(18000, 19000)).toBe(-1000);
+    expect(descontoDoLaudo(null, 14000)).toBe(0);
+  });
+  it('chassi: 17 caracteres sem I, O e Q', () => {
+    expect(normalizarChassi('9bwzzz377vt004251')).toBe('9BWZZZ377VT004251');
+    expect(normalizarChassi('9BWZZZ377VT00425I')).toBeNull();
+    expect(normalizarChassi('9BWZZZ377VT0042')).toBeNull();
+  });
+  const base = { placa: 'rtx-4f21', clienteId: '11111111-1111-1111-1111-111111111111', servicoId: '22222222-2222-2222-2222-222222222222', formaPagamentoId: '33333333-3333-3333-3333-333333333333' };
+  it('lançamento normaliza a placa e aceita os campos opcionais vazios', () => {
+    const r = laudoSchema.parse({ ...base, chassi: '', numeroLaudo: '', observacao: '  ' });
+    expect(r.placa).toBe('RTX4F21');
+    expect(r.chassi).toBeUndefined();
+  });
+  it('recusa placa inválida, valor com centavos quebrados e motivo curto', () => {
+    expect(laudoSchema.safeParse({ ...base, placa: 'AB12345' }).success).toBe(false);
+    expect(laudoSchema.safeParse({ ...base, valorManualCentavos: 180.5 }).success).toBe(false);
+    expect(laudoSchema.safeParse({ ...base, ajusteMotivo: 'oi' }).success).toBe(false);
+    expect(laudoSchema.safeParse({ ...base, valorManualCentavos: 14000, dataLaudo: '2026-10-27' }).success).toBe(true);
+  });
+  it('lote aceita até 50 linhas e exige ao menos uma', () => {
+    expect(loteSchema.safeParse({ itens: [] }).success).toBe(false);
+    expect(loteSchema.safeParse({ itens: Array.from({ length: 51 }, () => ({})) }).success).toBe(false);
+    expect(loteSchema.safeParse({ itens: [{}] }).success).toBe(true);
   });
 });

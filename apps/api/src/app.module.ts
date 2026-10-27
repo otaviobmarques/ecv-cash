@@ -15,6 +15,7 @@ import { AuditoriaController } from './auditoria/auditoria.controller';
 import { HealthController } from './health/health.controller';
 import { CommonModule } from './common/common.module';
 import { CadastrosModule } from './cadastros/cadastros.module';
+import { LaudosModule } from './laudos/laudos.module';
 import { BoAuthController } from './backoffice/bo-auth.controller';
 import { BoController } from './backoffice/bo.controller';
 import { BoAuthService } from './backoffice/bo-auth.service';
@@ -22,7 +23,7 @@ import { BoService } from './backoffice/bo.service';
 import { BoGuard } from './backoffice/bo.guard';
 
 @Module({
-  imports: [DbModule, CommonModule, MailModule, CadastrosModule],
+  imports: [DbModule, CommonModule, MailModule, CadastrosModule, LaudosModule],
   controllers: [BoAuthController, BoController, AuthController, EmpresasController, UsuariosController, TemaController, AuditoriaController, HealthController],
   providers: [BoAuthService, BoService, BoGuard, AuthService, EmpresasService, UsuariosService, TemaService, { provide: APP_GUARD, useClass: AcessoGuard }],
 })
