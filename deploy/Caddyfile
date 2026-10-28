@@ -1,5 +1,11 @@
 {
-	email {$EMAIL_ACME}
+	# O HTTPS (certificado e redirecionamento) é do Traefik, que já ocupa as portas 80 e 443 do servidor.
+	# Aqui o Caddy só serve HTTP na rede interna.
+	auto_https off
+	servers {
+		# Mantém o X-Forwarded-For que o Traefik mandou (o IP real de quem acessa), em vez de trocar pelo IP do Traefik.
+		trusted_proxies static private_ranges
+	}
 }
 
 (seguranca) {
@@ -13,7 +19,7 @@
 	}
 }
 
-app.{$DOMINIO} {
+http://app.{$DOMINIO}:80 {
 	import seguranca
 	handle_path /api/* {
 		reverse_proxy api:3000
@@ -25,7 +31,7 @@ app.{$DOMINIO} {
 	}
 }
 
-admin.{$DOMINIO} {
+http://admin.{$DOMINIO}:80 {
 	import seguranca
 	handle_path /api/* {
 		reverse_proxy api:3000

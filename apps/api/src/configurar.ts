@@ -8,7 +8,7 @@ import type { Env } from './config/env';
 
 /** Configuração comum à aplicação real e aos testes. */
 export function configurar(app: INestApplication, env: Env) {
-  (app.getHttpAdapter().getInstance() as Express).set('trust proxy', 1);
+  (app.getHttpAdapter().getInstance() as Express).set('trust proxy', env.TRUST_PROXY_SALTOS);
   const origens = env.ORIGENS_PERMITIDAS.split(',').map((o) => o.trim());
   app.enableCors({ origin: origens, credentials: true, methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS'] });
   app.use(helmet());

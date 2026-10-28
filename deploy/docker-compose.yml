@@ -1,5 +1,6 @@
-# ECV Cash: banco, migrações, API e o site (Caddy) no mesmo servidor.
-# Uso: cd deploy && cp .env.exemplo .env (ou ./gerar-env.sh) && docker compose up -d --build
+# ECV Cash: banco, migrações, API e o site (Caddy) num servidor onde o Traefik já cuida das portas 80/443 e do HTTPS.
+# Uso: cd deploy && ./gerar-env.sh DOMINIO REDE_TRAEFIK CERTRESOLVER && docker compose up -d --build
+# Passo a passo: deploy/INSTALAR-NA-VPS.md
 name: ecv-cash
 
 services:
@@ -20,6 +21,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    networks: [interna]
     # sem "ports": o banco não é acessível de fora do servidor
 
   migrar:
@@ -31,6 +33,7 @@ services:
     environment:
       # só este serviço conhece a senha do dono do banco
       DATABASE_URL_OWNER: postgres://ecv_owner:${ECV_OWNER_PW}@db:5432/ecv_cash
+    networks: [interna]
     command: ["node", "dist/db/migrate.js"]
 
   api:
@@ -47,19 +50,44 @@ services:
       URL_APP: https://app.${DOMINIO}
       URL_BACKOFFICE: https://admin.${DOMINIO}
       EXPOR_CONVITE: "true"
+      # Traefik -> Caddy -> API: dois proxies na frente
+      TRUST_PROXY_SALTOS: "2"
+    networks: [interna]
     # sem "ports": só o Caddy fala com a API
 
   site:
     build: { context: .., dockerfile: deploy/Dockerfile.caddy }
     restart: unless-stopped
     depends_on: [api]
-    ports: ["80:80", "443:443"]
     environment:
       DOMINIO: ${DOMINIO:?defina no .env}
-      EMAIL_ACME: ${EMAIL_ACME:?defina no .env}
-    volumes:
-      - certificados:/data
-      - caddy_config:/config
+    networks:
+      interna: {}
+      traefik:
+        # apelido único: a rede do Traefik é compartilhada com outros projetos
+        aliases: [ecv-cash-site]
+    # sem "ports": quem recebe a internet é o Traefik
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${REDE_TRAEFIK:?defina no .env}
+      traefik.http.services.ecv-cash.loadbalancer.server.port: "80"
+      # sistema
+      traefik.http.routers.ecv-cash-app.rule: Host(`app.${DOMINIO}`)
+      traefik.http.routers.ecv-cash-app.entrypoints: ${TRAEFIK_ENTRYPOINT_HTTPS:-websecure}
+      traefik.http.routers.ecv-cash-app.tls: "true"
+      traefik.http.routers.ecv-cash-app.tls.certresolver: ${TRAEFIK_CERTRESOLVER:?defina no .env}
+      traefik.http.routers.ecv-cash-app.service: ecv-cash
+      # backoffice
+      traefik.http.routers.ecv-cash-admin.rule: Host(`admin.${DOMINIO}`)
+      traefik.http.routers.ecv-cash-admin.entrypoints: ${TRAEFIK_ENTRYPOINT_HTTPS:-websecure}
+      traefik.http.routers.ecv-cash-admin.tls: "true"
+      traefik.http.routers.ecv-cash-admin.tls.certresolver: ${TRAEFIK_CERTRESOLVER:?defina no .env}
+      traefik.http.routers.ecv-cash-admin.service: ecv-cash
+      # HTTP -> HTTPS (só para estes dois endereços)
+      traefik.http.middlewares.ecv-cash-https.redirectscheme.scheme: https
+      traefik.http.routers.ecv-cash-http.rule: Host(`app.${DOMINIO}`) || Host(`admin.${DOMINIO}`)
+      traefik.http.routers.ecv-cash-http.entrypoints: ${TRAEFIK_ENTRYPOINT_HTTP:-web}
+      traefik.http.routers.ecv-cash-http.middlewares: ecv-cash-https
 
   # Cria o primeiro usuário da equipe interna: docker compose run --rm criar-interno "Nome" email PLATAFORMA
   criar-interno:
@@ -69,9 +97,14 @@ services:
       migrar: { condition: service_completed_successfully }
     environment:
       DATABASE_URL_OWNER: postgres://ecv_owner:${ECV_OWNER_PW}@db:5432/ecv_cash
+    networks: [interna]
     entrypoint: ["node", "dist/db/criar-interno.js"]
+
+networks:
+  interna: {}
+  traefik:
+    external: true
+    name: ${REDE_TRAEFIK:?defina no .env}
 
 volumes:
   dados:
-  certificados:
-  caddy_config:

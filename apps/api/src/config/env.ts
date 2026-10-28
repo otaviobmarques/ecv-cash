@@ -10,6 +10,8 @@ const schema = z.object({
   EXPOR_CONVITE: z.enum(['true', 'false']).default('true'),
   URL_APP: z.string().default('http://localhost:5173'),
   URL_BACKOFFICE: z.string().default('http://localhost:5174'),
+  /** Quantos proxies existem na frente da API (para enxergar o IP real de quem acessa). Com Traefik e Caddy em fila, são 2. */
+  TRUST_PROXY_SALTOS: z.coerce.number().int().min(0).max(5).default(1),
   /** 32 bytes em base64. Cifra segredos de 2FA e assina tickets. Obrigatória em produção. */
   CHAVE_SEGREDOS: z.string().optional(),
 });

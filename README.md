@@ -54,7 +54,7 @@ apps/web          app dos clientes (React + Vite)
 apps/backoffice   backoffice da equipe interna (React + Vite)
 packages/ui       Design System ECV Cash: tokens, componentes, cliente da API, tema
 packages/shared   regras puras compartilhadas: permissões, dinheiro, juros, contraste, validações
-deploy/           publicação em servidor (Docker Compose, Caddy, backup), ver docs/05-publicacao.md
+deploy/           publicação em servidor (Docker Compose atrás do Traefik, Caddy, backup), ver deploy/INSTALAR-NA-VPS.md
 e2e/              verificação ponta a ponta no navegador (manual)
 docs/             decisões, arquitetura, modelo de dados, protótipo
 scripts/          bootstrap do banco
