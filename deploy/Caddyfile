@@ -1,0 +1,38 @@
+{
+	email {$EMAIL_ACME}
+}
+
+(seguranca) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+app.{$DOMINIO} {
+	import seguranca
+	handle_path /api/* {
+		reverse_proxy api:3000
+	}
+	handle {
+		root * /srv/app
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+admin.{$DOMINIO} {
+	import seguranca
+	handle_path /api/* {
+		reverse_proxy api:3000
+	}
+	handle {
+		root * /srv/admin
+		try_files {path} /index.html
+		file_server
+	}
+}

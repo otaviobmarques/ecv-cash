@@ -1,0 +1,77 @@
+# ECV Cash: banco, migrações, API e o site (Caddy) no mesmo servidor.
+# Uso: cd deploy && cp .env.exemplo .env (ou ./gerar-env.sh) && docker compose up -d --build
+name: ecv-cash
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina no .env}
+      ECV_OWNER_PW: ${ECV_OWNER_PW:?defina no .env}
+      ECV_APP_PW: ${ECV_APP_PW:?defina no .env}
+      ECV_DB: ecv_cash
+    volumes:
+      - dados:/var/lib/postgresql/data
+      - ../apps/api/db/bootstrap.sql:/bootstrap.sql:ro
+      - ./iniciar-banco.sh:/docker-entrypoint-initdb.d/10-iniciar-banco.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecv_cash"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # sem "ports": o banco não é acessível de fora do servidor
+
+  migrar:
+    build: { context: .., dockerfile: deploy/Dockerfile.api }
+    image: ecv-cash-api
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      # só este serviço conhece a senha do dono do banco
+      DATABASE_URL_OWNER: postgres://ecv_owner:${ECV_OWNER_PW}@db:5432/ecv_cash
+    command: ["node", "dist/db/migrate.js"]
+
+  api:
+    image: ecv-cash-api
+    restart: unless-stopped
+    depends_on:
+      migrar: { condition: service_completed_successfully }
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgres://ecv_app:${ECV_APP_PW}@db:5432/ecv_cash
+      CHAVE_SEGREDOS: ${CHAVE_SEGREDOS:?defina no .env}
+      ORIGENS_PERMITIDAS: https://app.${DOMINIO},https://admin.${DOMINIO}
+      URL_APP: https://app.${DOMINIO}
+      URL_BACKOFFICE: https://admin.${DOMINIO}
+      EXPOR_CONVITE: "true"
+    # sem "ports": só o Caddy fala com a API
+
+  site:
+    build: { context: .., dockerfile: deploy/Dockerfile.caddy }
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMINIO: ${DOMINIO:?defina no .env}
+      EMAIL_ACME: ${EMAIL_ACME:?defina no .env}
+    volumes:
+      - certificados:/data
+      - caddy_config:/config
+
+  # Cria o primeiro usuário da equipe interna: docker compose run --rm criar-interno "Nome" email PLATAFORMA
+  criar-interno:
+    image: ecv-cash-api
+    profiles: ["ferramentas"]
+    depends_on:
+      migrar: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL_OWNER: postgres://ecv_owner:${ECV_OWNER_PW}@db:5432/ecv_cash
+    entrypoint: ["node", "dist/db/criar-interno.js"]
+
+volumes:
+  dados:
+  certificados:
+  caddy_config:
