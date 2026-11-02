@@ -80,3 +80,14 @@ export interface BaixaItem {
 export interface TituloDetalhe extends TituloItem { baixas: BaixaItem[]; numeroNf: string | null; motivoCancelamento: string | null }
 export interface SimulacaoBaixa { principalCentavos: number; saldoCentavos: number; data: string; diasAtraso: number; multaCentavos: number; jurosCentavos: number; totalCentavos: number }
 export interface ConfigFinanceira { perdaoLimiteCentavos: number; aprovacaoPagarObrigatoria: boolean; financeiroAprovaPagar: boolean; financeiroVeDre: boolean }
+
+export interface FaturaItem {
+  id: string; clienteId: string; cliente: string; numero: number; periodoIni: string; periodoFim: string; emissao: string; vencimento: string; totalCentavos: number; saldoCentavos: number;
+  status: 'ABERTA' | 'PARCIAL' | 'PAGA' | 'CANCELADA'; vencida: boolean; numeroNf: string | null; numeroBoleto: string | null;
+}
+export interface FaturaTitulo { id: string; numero: number; numeroLaudo: string | null; placa: string; dataLaudo: string; servico: string; valorCentavos: number; pagoCentavos: number; saldoCentavos: number; multaCentavos: number; jurosCentavos: number; status: string }
+export interface FaturaDetalhe extends FaturaItem {
+  observacao: string | null; motivoCancelamento: string | null; titulos: FaturaTitulo[]; encargosCentavos: number; totalHojeCentavos: number; recebidoCentavos: number; diasAtraso: number;
+}
+export interface PixFatura { disponivel: boolean; valorCentavos: number; copiaECola?: string; qrCode?: string; conta?: string; titular?: string | null }
+export interface PreviaCliente { clienteId: string; cliente: string; periodicidade: 'SEMANAL' | 'QUINZENAL' | 'MENSAL'; prazoDias: number; titulos: number; totalCentavos: number; primeiroLaudo: string; ultimoLaudo: string }

@@ -41,6 +41,19 @@ export async function recalcularTitulo(c: PoolClient, tituloId: string): Promise
         status = CASE WHEN t.status = 'CANCELADO' THEN 'CANCELADO'::status_titulo WHEN b.pago = 0 THEN 'ABERTO'::status_titulo WHEN b.pago >= t.valor_centavos THEN 'QUITADO'::status_titulo ELSE 'PARCIAL'::status_titulo END
        FROM (SELECT coalesce(sum(principal_centavos), 0)::int AS pago FROM baixa_receber WHERE titulo_id = $1) b
       WHERE t.id = $1 RETURNING t.laudo_id AS "laudoId", t.pago_centavos AS "pagoCentavos", t.status, t.fatura_id AS "faturaId"`, [tituloId])).rows[0];
+  if (t.faturaId) await recalcularFatura(c, t.faturaId);
   await c.query(`UPDATE laudo SET travado_em = CASE WHEN $2::boolean THEN coalesce(travado_em, now()) ELSE NULL END WHERE id = $1 AND status = 'ATIVO'`, [t.laudoId, t.pagoCentavos > 0 || t.faturaId !== null]);
   return { pagoCentavos: t.pagoCentavos, status: t.status };
+}
+
+/** A fatura acompanha os títulos: paga quando todos quitam, parcial quando algum recebeu, aberta quando nenhum. */
+export async function recalcularFatura(c: PoolClient, faturaId: string): Promise<string> {
+  const r = await c.query(
+    `UPDATE fatura f SET status = CASE
+         WHEN s.total > 0 AND s.quitados = s.total THEN 'PAGA'::status_fatura
+         WHEN s.recebido > 0 THEN 'PARCIAL'::status_fatura ELSE 'ABERTA'::status_fatura END
+       FROM (SELECT count(*) AS total, count(*) FILTER (WHERE status = 'QUITADO') AS quitados, coalesce(sum(pago_centavos), 0) AS recebido
+               FROM titulo_receber WHERE fatura_id = $1 AND status <> 'CANCELADO') s
+      WHERE f.id = $1 AND f.status <> 'CANCELADA' RETURNING f.status`, [faturaId]);
+  return r.rows[0]?.status;
 }

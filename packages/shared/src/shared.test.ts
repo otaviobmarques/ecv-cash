@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MATRIZ, PERFIS, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
+  MATRIZ, PERFIS, crc16, gerarPixCopiaECola, normalizarChavePix, periodoSugerido, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
   normalizarPlaca, criarEmpresaSchema, descontoDoLaudo, laudoSchema, loteSchema, normalizarChassi, resolverPreco, clienteSchema, contaFinanceiraSchema, custoDoLaudo, diaAnterior, diaSeguinte, margemDoLaudo, precoSchema, servicoCustoSchema, PLANO_CONTAS_PADRAO, FORMAS_PAGAMENTO_PADRAO, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
 } from './index';
 
@@ -251,5 +251,43 @@ describe('laudos: preço, chassi e validações', () => {
     expect(loteSchema.safeParse({ itens: [] }).success).toBe(false);
     expect(loteSchema.safeParse({ itens: Array.from({ length: 51 }, () => ({})) }).success).toBe(false);
     expect(loteSchema.safeParse({ itens: [{}] }).success).toBe(true);
+  });
+});
+
+describe('PIX e períodos de fatura', () => {
+  it('CRC-16/CCITT-FALSE confere com o valor de referência', () => {
+    expect(crc16('123456789')).toBe('29B1');
+  });
+  it('gera o copia e cola estático com valor, e o CRC final fecha', () => {
+    const p = gerarPixCopiaECola({ tipoChave: 'CNPJ', chave: '11.222.333/0001-81', nomeRecebedor: 'Vistoria Centro Ltda', cidade: 'São Paulo', valorCentavos: 18480, identificador: 'FAT 123' });
+    expect(p.startsWith('000201010211')).toBe(true);
+    expect(p).toContain('0014br.gov.bcb.pix0114' + '11222333000181');
+    expect(p).toContain('5406184.80');
+    expect(p).toContain('5802BR');
+    expect(p).toContain('5920VISTORIA CENTRO LTDA');
+    expect(p).toContain('6009SAO PAULO');
+    expect(p).toContain('0506FAT123');
+    expect(p.slice(-4)).toBe(crc16(p.slice(0, -4)));
+  });
+  it('sem valor o campo 54 não existe; telefone ganha +55; nome longo é cortado em 25', () => {
+    const p = gerarPixCopiaECola({ tipoChave: 'TELEFONE', chave: '(11) 91234-5678', nomeRecebedor: 'Empresa de Vistorias Veiculares do Sul Ltda', cidade: 'Curitiba' });
+    expect(p).not.toContain('5406');
+    expect(p).toContain('+5511912345678');
+    expect(p).toContain('5925EMPRESA DE VISTORIAS VEIC');
+    expect(p).toContain('0503***');
+  });
+  it('normaliza as chaves', () => {
+    expect(normalizarChavePix('CPF', '123.456.789-09')).toBe('12345678909');
+    expect(normalizarChavePix('EMAIL', ' Fin@Loja.COM ')).toBe('fin@loja.com');
+    expect(normalizarChavePix('TELEFONE', '+55 11 91234-5678')).toBe('+5511912345678');
+  });
+  it('período sugerido: semanal, quinzenal e mensal fecham antes de hoje', () => {
+    expect(periodoSugerido('SEMANAL', '2026-11-04')).toEqual({ ini: '2026-10-26', fim: '2026-11-01' }); // quarta
+    expect(periodoSugerido('SEMANAL', '2026-11-02')).toEqual({ ini: '2026-10-26', fim: '2026-11-01' }); // segunda
+    expect(periodoSugerido('QUINZENAL', '2026-11-20')).toEqual({ ini: '2026-11-01', fim: '2026-11-15' });
+    expect(periodoSugerido('QUINZENAL', '2026-11-10')).toEqual({ ini: '2026-10-16', fim: '2026-10-31' });
+    expect(periodoSugerido('QUINZENAL', '2027-01-05')).toEqual({ ini: '2026-12-16', fim: '2026-12-31' });
+    expect(periodoSugerido('MENSAL', '2026-03-10')).toEqual({ ini: '2026-02-01', fim: '2026-02-28' });
+    expect(periodoSugerido('MENSAL', '2027-01-03')).toEqual({ ini: '2026-12-01', fim: '2026-12-31' });
   });
 });

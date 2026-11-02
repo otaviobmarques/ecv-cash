@@ -15,6 +15,7 @@ import { Fornecedores } from './paginas/Fornecedores';
 import { LancarLaudo } from './paginas/LancarLaudo';
 import { Laudos } from './paginas/Laudos';
 import { Receber } from './paginas/Receber';
+import { Faturados } from './paginas/Faturados';
 import { Caixa } from './paginas/Caixa';
 import { Cadastros } from './paginas/Cadastros';
 
@@ -32,6 +33,7 @@ export function App() {
         <Route path="lancar" element={<LancarLaudo />} />
         <Route path="laudos" element={<Laudos />} />
         <Route path="receber" element={<Receber />} />
+        <Route path="faturados" element={<Faturados />} />
         <Route path="caixa" element={<Caixa />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="fornecedores" element={<Fornecedores />} />

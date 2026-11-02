@@ -14,6 +14,7 @@ const MENU: { para: string; rotulo: string; icone: NomeIcone; perm?: Permissao; 
   { para: '/laudos', rotulo: 'Laudos', icone: 'laudo', perm: 'laudo.ver' },
   { para: '/laudos', rotulo: 'Meus laudos', icone: 'laudo', perm: 'laudo.ver_proprios', naoPara: ['ADMINISTRATIVO', 'GERENTE', 'FINANCEIRO'] },
   { para: '/receber', rotulo: 'A receber', icone: 'caixa', perm: 'receber.ver' },
+  { para: '/faturados', rotulo: 'Faturados', icone: 'laudo', perm: 'receber.ver' },
   { para: '/caixa', rotulo: 'Caixa', icone: 'caixa', perm: 'caixa.ver' },
   { para: '/clientes', rotulo: 'Clientes e preços', icone: 'usuarios', perm: 'cliente.ver', naoPara: ['VISTORIADOR'] },
   { para: '/fornecedores', rotulo: 'Fornecedores', icone: 'empresas', perm: 'fornecedor.ver' },

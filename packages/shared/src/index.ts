@@ -13,3 +13,6 @@ export * from './laudos';
 export * from './schemas-laudos';
 export * from './schemas-caixa';
 export * from './schemas-receber';
+export * from './pix';
+export * from './faturas';
+export * from './schemas-faturas';
