@@ -46,8 +46,9 @@ jobs:
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
       - name: Esperar o site e a API responderem
         run: |
-          for i in $(seq 1 60); do
-            curl -fsS -H 'Host: app.ci.local' http://127.0.0.1:8080/ -o /dev/null && break
+          # o site sobe antes da API terminar de iniciar: espera a API responder (401 sem login) e não só o site
+          for i in $(seq 1 90); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: app.ci.local' http://127.0.0.1:8080/api/auth/eu)" = 401 ] && break
             sleep 2
           done
       - name: Conferir
