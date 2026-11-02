@@ -1,5 +1,12 @@
 # Instalar o ECV Cash numa VPS que já tem o Traefik (OpenClaw da Hostinger)
 
+## Caminho rápido (um comando)
+Com o DNS apontado (seção 1 abaixo) e o repositório clonado em `/opt/ecv-cash` (seção 2):
+```bash
+cd /opt/ecv-cash && sudo bash deploy/instalar.sh SEUDOMINIO.com.br seu@email.com "Seu Nome"
+```
+O script descobre sozinho a rede, o certresolver e os entrypoints do Traefik, gera o `.env`, sobe tudo, cria o primeiro usuário interno e mostra a senha provisória (uma única vez). Só lê o estado do Traefik e do OpenClaw; no fim compara os contêineres antes e depois. Se ele não conseguir descobrir algo, diz o que informar. O passo a passo manual continua abaixo.
+
 Nesta VPS o **Traefik** já ocupa as portas 80 e 443 e emite os certificados. O ECV Cash entra "ao lado": o Traefik recebe `app.SEUDOMINIO` e `admin.SEUDOMINIO` e entrega para o Caddy do ECV Cash (HTTP, rede interna), que serve as telas e encaminha `/api` para a API.
 
 ```
