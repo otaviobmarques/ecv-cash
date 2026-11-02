@@ -22,6 +22,7 @@ import { FaturasModule } from './faturas/faturas.module';
 import { PagarModule } from './pagar/pagar.module';
 import { RelatoriosModule } from './relatorios/relatorios.module';
 import { LgpdModule } from './lgpd/lgpd.module';
+import { CartaoModule } from './cartao/cartao.module';
 import { BoAuthController } from './backoffice/bo-auth.controller';
 import { BoController } from './backoffice/bo.controller';
 import { BoAuthService } from './backoffice/bo-auth.service';
@@ -29,7 +30,7 @@ import { BoService } from './backoffice/bo.service';
 import { BoGuard } from './backoffice/bo.guard';
 
 @Module({
-  imports: [DbModule, CommonModule, MailModule, CadastrosModule, LaudosModule, CaixaModule, ReceberModule, FaturasModule, PagarModule, RelatoriosModule, LgpdModule],
+  imports: [DbModule, CommonModule, MailModule, CadastrosModule, LaudosModule, CaixaModule, ReceberModule, FaturasModule, PagarModule, RelatoriosModule, LgpdModule, CartaoModule],
   controllers: [BoAuthController, BoController, AuthController, EmpresasController, UsuariosController, TemaController, AuditoriaController, HealthController],
   providers: [BoAuthService, BoService, BoGuard, AuthService, EmpresasService, UsuariosService, TemaService, { provide: APP_GUARD, useClass: AcessoGuard }],
 })

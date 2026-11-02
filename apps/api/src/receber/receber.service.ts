@@ -80,7 +80,7 @@ export class ReceberService {
                 EXISTS (SELECT 1 FROM baixa_receber e WHERE e.estorno_de = b.id) AS estornada
            FROM baixa_receber b JOIN forma_pagamento fp ON fp.id = b.forma_pagamento_id LEFT JOIN conta_financeira cf ON cf.id = b.conta_id LEFT JOIN usuario u ON u.id = b.criado_por
           WHERE b.titulo_id = $1 ORDER BY b.criado_em`, [id])).rows;
-      const extra = (await c.query(`SELECT t.fatura_id AS "faturaId", t.numero_nf AS "numeroNf", t.motivo_cancelamento AS "motivoCancelamento", fp.nome AS forma FROM titulo_receber t JOIN forma_pagamento fp ON fp.id = t.forma_pagamento_id WHERE t.id = $1`, [id])).rows[0];
+      const extra = (await c.query(`SELECT t.fatura_id AS "faturaId", t.numero_nf AS "numeroNf", t.motivo_cancelamento AS "motivoCancelamento", fp.nome AS forma, fp.tipo AS "formaTipo" FROM titulo_receber t JOIN forma_pagamento fp ON fp.id = t.forma_pagamento_id WHERE t.id = $1`, [id])).rows[0];
       return { ...t, ...extra, saldoCentavos: t.valorCentavos - t.pagoCentavos, baixas };
     });
   }

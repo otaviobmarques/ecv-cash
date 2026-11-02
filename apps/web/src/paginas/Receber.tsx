@@ -17,6 +17,8 @@ function pilulaTitulo(t: Pick<TituloItem, 'status' | 'vencido'>) {
   return t.status === 'PARCIAL' ? <Pilula tipo="info">Parcial</Pilula> : <Pilula tipo="neutra">Em aberto</Pilula>;
 }
 
+export const tipoDeForma = (formas: FormaPagamento[] | undefined, id: string, padrao?: string) => (id ? formas?.find((x) => x.id === id)?.tipo : padrao);
+
 export function Receber() {
   const { eu } = useOutletContext<{ eu: Eu }>();
   const qc = useQueryClient();
@@ -96,15 +98,23 @@ export function Receber() {
   );
 }
 
-function SelecaoContaForma({ conta, setConta, forma, setForma, erros }: { conta: string; setConta: (v: string) => void; forma: string; setForma: (v: string) => void; erros?: Record<string, string> }) {
+function SelecaoContaForma({ conta, setConta, forma, setForma, erros, tipoPadrao }: { conta: string; setConta: (v: string) => void; forma: string; setForma: (v: string) => void; erros?: Record<string, string>; tipoPadrao?: string }) {
   const contas = useQuery({ queryKey: ['caixa', 'contas-sel'], queryFn: () => api.get<{ contas: ContaCaixa[] }>('/caixa/contas') });
   const formas = useQuery({ queryKey: ['formas'], queryFn: () => api.get<FormaPagamento[]>('/formas-pagamento') });
+  const tipo = forma ? formas.data?.find((x) => x.id === forma)?.tipo : tipoPadrao;
+  const semConta = tipo === 'CARTAO_DEBITO' || tipo === 'CARTAO_CREDITO' || tipo === 'CHEQUE';
   return (
-    <div className="linha">
-      <Selecao rotulo="Conta em que entrou" obrigatorio value={conta} onChange={(e) => setConta(e.target.value)} erro={erros?.contaId}>
-        <option value="">Escolha…</option>{contas.data?.contas.filter((c) => c.status === 'ATIVO').map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-      </Selecao>
-      <Selecao rotulo="Forma de pagamento" value={forma} onChange={(e) => setForma(e.target.value)} dica="Vazio mantém a do laudo."><option value="">Como no laudo</option>{formas.data?.filter((x) => x.status !== 'INATIVO').map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</Selecao>
+    <div className="pilha" style={{ gap: 8 }}>
+      <div className="linha">
+        {!semConta && (
+          <Selecao rotulo="Conta em que entrou" obrigatorio value={conta} onChange={(e) => setConta(e.target.value)} erro={erros?.contaId}>
+            <option value="">Escolha…</option>{contas.data?.contas.filter((c) => c.status === 'ATIVO').map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </Selecao>
+        )}
+        <Selecao rotulo="Forma de pagamento" value={forma} onChange={(e) => setForma(e.target.value)} dica="Vazio mantém a do laudo."><option value="">Como no laudo</option>{formas.data?.filter((x) => x.status !== 'INATIVO').map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</Selecao>
+      </div>
+      {tipo === 'CARTAO_DEBITO' || tipo === 'CARTAO_CREDITO' ? <Aviso tipo="info">Cartão: o valor entra como venda a receber da operadora, já com a taxa descontada. O dinheiro entra no caixa quando a operadora pagar (tela Cartões e cheques).</Aviso> : null}
+      {tipo === 'CHEQUE' ? <Aviso tipo="info">Cheque: o dinheiro só entra no caixa quando o cheque compensar (tela Cartões e cheques).</Aviso> : null}
     </div>
   );
 }
@@ -114,8 +124,11 @@ function DetalheTitulo({ id, eu, onFechar, onMudou }: { id: string | null; eu: E
   const d = useQuery({ queryKey: ['receber', 'detalhe', id], enabled: !!id, queryFn: () => api.get<TituloDetalhe>(`/receber/titulos/${id}`) });
   const [modo, setModo] = useState<null | 'baixar' | { estornar: string }>(null);
   const [f, setF] = useState({ data: hojeIso(), principal: null as number | null, conta: '', forma: '', perdoar: false, motivo: '' });
+  const [ch, setCh] = useState({ numero: '', banco: '', emitente: '', bomPara: hojeIso() });
+  const formasQ = useQuery({ queryKey: ['formas'], queryFn: () => api.get<FormaPagamento[]>('/formas-pagamento') });
   const [erro, setErro] = useState<string | null>(null); const [campos, setCampos] = useState<Record<string, string>>({});
   const t = d.data;
+  const tipoEfetivo = tipoDeForma(formasQ.data, f.forma, t?.formaTipo);
   const aberto = t && (t.status === 'ABERTO' || t.status === 'PARCIAL');
   const sim = useQuery({
     queryKey: ['receber', 'sim', id, f.data, f.principal], enabled: !!id && modo === 'baixar',
@@ -123,7 +136,7 @@ function DetalheTitulo({ id, eu, onFechar, onMudou }: { id: string | null; eu: E
   });
   const fechar = () => { setModo(null); setErro(null); setCampos({}); onFechar(); };
   const baixar = useMutation({
-    mutationFn: () => api.post(`/receber/titulos/${id}/baixas`, { data: f.data, principalCentavos: f.principal ?? undefined, contaId: f.conta || undefined, formaPagamentoId: f.forma || undefined, perdoarEncargos: f.perdoar || undefined, motivo: f.motivo || undefined }),
+    mutationFn: () => api.post(`/receber/titulos/${id}/baixas`, { data: f.data, principalCentavos: f.principal ?? undefined, contaId: f.conta || undefined, formaPagamentoId: f.forma || undefined, perdoarEncargos: f.perdoar || undefined, motivo: f.motivo || undefined, cheque: tipoEfetivo === 'CHEQUE' ? { numero: ch.numero, banco: ch.banco || undefined, emitente: ch.emitente, bomPara: ch.bomPara } : undefined }),
     onSuccess: () => { avisar('Recebimento registrado.'); onMudou(); setModo(null); setErro(null); setCampos({}); d.refetch(); },
     onError: (e) => { setErro(mensagemDoErro(e)); setCampos((e as ErroApi).campos ?? {}); },
   });
@@ -167,7 +180,15 @@ function DetalheTitulo({ id, eu, onFechar, onMudou }: { id: string | null; eu: E
                 <Campo rotulo="Data do recebimento" type="date" max={hojeIso()} value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} erro={campos.data} />
                 <CampoDinheiro rotulo="Valor do título a baixar (R$)" centavos={f.principal} onChange={(v) => setF({ ...f, principal: v })} erro={campos.principalCentavos} dica={`Vazio quita o saldo (${formatarBRL(t.saldoCentavos)}).`} />
               </div>
-              <SelecaoContaForma conta={f.conta} setConta={(v) => setF({ ...f, conta: v })} forma={f.forma} setForma={(v) => setF({ ...f, forma: v })} erros={campos} />
+              <SelecaoContaForma conta={f.conta} setConta={(v) => setF({ ...f, conta: v })} forma={f.forma} setForma={(v) => setF({ ...f, forma: v })} erros={campos} tipoPadrao={t.formaTipo} />
+              {tipoEfetivo === 'CHEQUE' && (
+                <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                  <Campo rotulo="Nº do cheque" obrigatorio value={ch.numero} onChange={(e) => setCh({ ...ch, numero: e.target.value })} erro={campos['cheque.numero']} />
+                  <Campo rotulo="Banco" value={ch.banco} onChange={(e) => setCh({ ...ch, banco: e.target.value })} />
+                  <Campo rotulo="Emitente" obrigatorio value={ch.emitente} onChange={(e) => setCh({ ...ch, emitente: e.target.value })} erro={campos['cheque.emitente']} />
+                  <Campo rotulo="Bom para" type="date" obrigatorio value={ch.bomPara} onChange={(e) => setCh({ ...ch, bomPara: e.target.value })} erro={campos['cheque.bomPara']} />
+                </div>
+              )}
               {sim.data && (
                 <div className="pilha" style={{ gap: 4 }} aria-live="polite">
                   <div className="linha entre"><span>Valor do título</span><span className="num">{formatarBRL(sim.data.principalCentavos)}</span></div>

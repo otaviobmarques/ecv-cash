@@ -5,12 +5,15 @@ import { Acesso, exigir, perfilEm } from '../common/acesso';
 import { auditar } from '../common/auditoria';
 import { estornarLancamento, hojeSP, registrarLancamento, ultimoDiaFechado } from '../caixa/razao';
 import { recalcularTitulo } from './titulo';
+import { cancelarLiquidacaoDaBaixa, criarLiquidacao } from '../cartao/cartao';
+import { cancelarChequeDaBaixa, criarCheque, type DadosCheque } from '../cheques/cheque';
 
 const erroCampo = (campo: string, mensagem: string) => new UnprocessableEntityException({ mensagem, campos: { [campo]: mensagem } });
 
 export interface OpcoesBaixa {
   tituloId: string; data?: string; principalCentavos?: number; contaId?: string; formaPagamentoId?: string;
-  perdoarEncargos?: boolean; perdaoCentavos?: number; motivo?: string; loteId?: string;
+  perdoarEncargos?: boolean; perdaoCentavos?: number; motivo?: string; loteId?: string; cheque?: DadosCheque;
+  /** estorno feito pelo sistema (cheque devolvido): a permissão já foi conferida por quem chamou */
 }
 
 export interface TituloParaBaixa {
@@ -63,28 +66,35 @@ export async function executarBaixa(c: PoolClient, a: Acesso, o: OpcoesBaixa) {
   }
 
   const formaId = o.formaPagamentoId ?? t.formaPagamentoId;
-  const forma = (await c.query('SELECT status FROM forma_pagamento WHERE id = $1', [formaId])).rows[0];
+  const forma = (await c.query('SELECT status, tipo FROM forma_pagamento WHERE id = $1', [formaId])).rows[0];
   if (!forma || forma.status !== 'ATIVO') throw erroCampo('formaPagamentoId', 'Escolha uma forma de pagamento ativa.');
-  if (!o.contaId) throw erroCampo('contaId', 'Escolha a conta em que o dinheiro entrou.');
+  const cartao = forma.tipo === 'CARTAO_DEBITO' || forma.tipo === 'CARTAO_CREDITO';
+  const cheque = forma.tipo === 'CHEQUE';
+  // cartão e cheque não mexem no caixa agora: a operadora paga depois e o cheque só vale quando compensa
+  if (!cartao && !cheque && !o.contaId) throw erroCampo('contaId', 'Escolha a conta em que o dinheiro entrou.');
+  if (cheque && !o.cheque) throw erroCampo('cheque', 'Informe os dados do cheque: número, emitente e bom para.');
 
   const recebido = principal + enc.multa + enc.juros - perdao;
-  const lancId = await registrarLancamento(c, a, {
-    empresaId: t.empresaId, contaId: o.contaId, data, valorCentavos: recebido, origem: 'BAIXA_RECEBER', planoContaId: t.contaReceitaId,
+  const contaId = cartao || cheque ? null : o.contaId!;
+  const lancId = contaId ? await registrarLancamento(c, a, {
+    empresaId: t.empresaId, contaId, data, valorCentavos: recebido, origem: 'BAIXA_RECEBER', planoContaId: t.contaReceitaId,
     descricao: `Recebimento do laudo nº ${t.numero} (${t.placa}) · ${t.cliente}`,
-  });
+  }) : null;
   const baixa = (await c.query(
     `INSERT INTO baixa_receber (grupo_id, empresa_id, titulo_id, data, principal_centavos, multa_centavos, juros_centavos, perdao_centavos, forma_pagamento_id, conta_id, lancamento_id, lote_id, motivo, criado_por)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      RETURNING id, data::text AS data, principal_centavos AS "principalCentavos", multa_centavos AS "multaCentavos", juros_centavos AS "jurosCentavos", perdao_centavos AS "perdaoCentavos", recebido_centavos AS "recebidoCentavos"`,
-    [a.grupoId, t.empresaId, t.id, data, principal, enc.multa, enc.juros, perdao, formaId, o.contaId, lancId, o.loteId ?? null, o.motivo ?? null, a.usuarioId])).rows[0];
+    [a.grupoId, t.empresaId, t.id, data, principal, enc.multa, enc.juros, perdao, formaId, contaId, lancId, o.loteId ?? null, o.motivo ?? null, a.usuarioId])).rows[0];
+  if (cartao) await criarLiquidacao(c, a.grupoId, { empresaId: t.empresaId, baixaId: baixa.id, formaId, dataVenda: data, brutoCentavos: recebido });
+  if (cheque) await criarCheque(c, a.grupoId, { empresaId: t.empresaId, baixaId: baixa.id, valorCentavos: recebido, cheque: o.cheque! });
   const novo = await recalcularTitulo(c, t.id);
   await auditar(c, a, { acao: 'receber.baixa', entidade: 'titulo_receber', entidadeId: t.id, empresaId: t.empresaId,
-    depois: { laudo: t.numero, placa: t.placa, ...baixa, statusTitulo: novo.status, diasAtraso: enc.diasAtraso }, motivo: o.motivo });
-  return { ...baixa, tituloStatus: novo.status, diasAtraso: enc.diasAtraso };
+    depois: { laudo: t.numero, placa: t.placa, ...baixa, statusTitulo: novo.status, diasAtraso: enc.diasAtraso, destino: cartao ? 'cartao' : cheque ? 'cheque' : 'conta' }, motivo: o.motivo });
+  return { ...baixa, tituloStatus: novo.status, diasAtraso: enc.diasAtraso, destino: cartao ? 'CARTAO' : cheque ? 'CHEQUE' : 'CONTA' };
 }
 
 /** Estorna uma baixa: registro contrário (hoje) e lançamento contrário no caixa. */
-export async function executarEstornoBaixa(c: PoolClient, a: Acesso, baixaId: string, motivo: string) {
+export async function executarEstornoBaixa(c: PoolClient, a: Acesso, baixaId: string, motivo: string, opcoes: { semPermissao?: boolean } = {}) {
   const b = (await c.query(
     `SELECT b.id, b.empresa_id AS "empresaId", b.titulo_id AS "tituloId", b.data::text AS data, b.principal_centavos AS principal, b.multa_centavos AS multa, b.juros_centavos AS juros,
             b.perdao_centavos AS perdao, b.forma_pagamento_id AS "formaId", b.conta_id AS "contaId", b.lancamento_id AS "lancamentoId", b.estorno_de AS "estornoDe"
@@ -94,14 +104,16 @@ export async function executarEstornoBaixa(c: PoolClient, a: Acesso, baixaId: st
   if (b.estornoDe) throw new ConflictException('Isto já é um estorno.');
   if ((await c.query('SELECT 1 FROM baixa_receber WHERE estorno_de = $1', [baixaId])).rows[0]) throw new ConflictException('Esta baixa já foi estornada.');
   const perfil = perfilEm(a, b.empresaId);
-  if (!perfil) throw new ForbiddenException('Você não tem permissão para esta ação.');
-  if (!temPermissao(perfil, 'receber.estornar')) {
+  if (!perfil && !opcoes.semPermissao) throw new ForbiddenException('Você não tem permissão para esta ação.');
+  if (!opcoes.semPermissao && !temPermissao(perfil!, 'receber.estornar')) {
     exigir(a, 'receber.estornar_periodo_aberto', b.empresaId);
     const fechadoAte = b.contaId ? await ultimoDiaFechado(c, b.contaId) : null;
     const mesFechado = (await c.query('SELECT periodo_fechado($1, $2) AS f', [b.empresaId, b.data])).rows[0].f;
     if (mesFechado || (fechadoAte && fechadoAte >= b.data)) throw new ForbiddenException('Esta baixa é de um período já fechado. Peça ao gerente para estornar.');
   }
   const hoje = hojeSP();
+  await cancelarLiquidacaoDaBaixa(c, b.id);
+  await cancelarChequeDaBaixa(c, b.id);
   if (b.lancamentoId) await estornarLancamento(c, a, b.lancamentoId, hoje, motivo);
   const est = (await c.query(
     `INSERT INTO baixa_receber (grupo_id, empresa_id, titulo_id, data, principal_centavos, multa_centavos, juros_centavos, perdao_centavos, forma_pagamento_id, conta_id, estorno_de, motivo, criado_por)

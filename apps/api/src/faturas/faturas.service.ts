@@ -154,6 +154,8 @@ export class FaturasService {
       exigir(a, 'receber.baixar', f.empresaId);
       if (f.status === 'CANCELADA') throw new ConflictException('Esta fatura está cancelada.');
       if (f.status === 'PAGA') throw new ConflictException('Esta fatura já está paga.');
+      const formaTipo = d.formaPagamentoId ? (await c.query('SELECT tipo FROM forma_pagamento WHERE id = $1', [d.formaPagamentoId])).rows[0]?.tipo : null;
+      if (formaTipo === 'CHEQUE') throw erroCampo('formaPagamentoId', 'Cheque é baixado título a título, com os dados de cada cheque. Use a tela A receber.');
       await c.query('SELECT 1 FROM titulo_receber WHERE fatura_id = $1 ORDER BY id FOR UPDATE', [id]);
       const titulos = (await this.titulosDaFatura(c, f, d.data ?? hojeSP())).filter((t) => t.saldoCentavos > 0);
       const saldoTotal = titulos.reduce((s, t) => s + t.saldoCentavos, 0);

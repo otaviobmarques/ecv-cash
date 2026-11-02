@@ -77,7 +77,7 @@ export interface BaixaItem {
   id: string; data: string; principalCentavos: number; multaCentavos: number; jurosCentavos: number; perdaoCentavos: number; recebidoCentavos: number; forma: string; conta: string | null;
   estornoDe: string | null; motivo: string | null; criadoPor: string | null; estornada: boolean;
 }
-export interface TituloDetalhe extends TituloItem { baixas: BaixaItem[]; numeroNf: string | null; motivoCancelamento: string | null }
+export interface TituloDetalhe extends TituloItem { baixas: BaixaItem[]; numeroNf: string | null; motivoCancelamento: string | null; formaTipo: string }
 export interface SimulacaoBaixa { principalCentavos: number; saldoCentavos: number; data: string; diasAtraso: number; multaCentavos: number; jurosCentavos: number; totalCentavos: number }
 export interface ConfigFinanceira { perdaoLimiteCentavos: number; aprovacaoPagarObrigatoria: boolean; financeiroAprovaPagar: boolean; financeiroVeDre: boolean }
 
@@ -111,3 +111,6 @@ export interface Painel {
   serie?: { dia: string; valor: number; laudos: number }[]; ultimos?: { id: string; numero: number; placa: string; servico: string; dataLaudo: string }[];
   lojas?: { id: string; nome: string; laudosMes: number; valorMes: number; aReceberCentavos: number; vencidoCentavos: number; aPagarCentavos: number }[];
 }
+
+export interface VendaCartao { id: string; numero: number; placa: string; cliente: string; forma: string; dataVenda: string; dataPrevista: string; brutoCentavos: number; taxaBp: number; taxaCentavos: number; antecipacaoCentavos: number; liquidoCentavos: number; status: 'PREVISTO' | 'LIQUIDADO' | 'CANCELADO'; conta: string | null; dataLiquidacao: string | null; atrasada: boolean }
+export interface Cheque { id: string; numero: string; banco: string | null; emitente: string; bomPara: string; valorCentavos: number; status: 'RECEBIDO' | 'DEPOSITADO' | 'COMPENSADO' | 'DEVOLVIDO' | 'CANCELADO'; contaDeposito: string | null; depositadoEm: string | null; compensadoEm: string | null; devolvidoEm: string | null; motivoDevolucao: string | null; laudo: number; placa: string; cliente: string; podeDepositar: boolean }
