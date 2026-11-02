@@ -20,6 +20,8 @@ export class FiltroDeErros implements ExceptionFilter {
       this.log.warn(`Acesso negado pelo banco: ${(e as Error).message}`);
       return res.status(403).json({ mensagem: 'Você não tem permissão para esta ação.' });
     }
+    // regra escrita por nós no banco (RAISE EXCEPTION): a mensagem já é para o usuário
+    if (code === 'P0001') return res.status(409).json({ mensagem: (e as Error).message });
     if (code === '23505') return res.status(409).json({ mensagem: 'Já existe um registro com estes dados.' });
     if (code === '23P01') return res.status(409).json({ mensagem: 'Estes dados conflitam com um registro existente.' });
     if (code === '23503' || code === '23514' || code === '22P02' || code === '22003') {

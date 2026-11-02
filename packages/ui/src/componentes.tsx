@@ -7,6 +7,7 @@ const ICONES = {
   aparencia: '<path d="M12 3c3 4 6 6.8 6 10.5A6 6 0 0 1 6 13.5C6 9.8 9 7 12 3z"/>',
   auditoria: '<path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
   laudo: '<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M10 12h6M10 16h6"/>',
+  caixa: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16" cy="14.5" r="1.6"/>',
   grupos: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
 } as const;
 export type NomeIcone = keyof typeof ICONES;

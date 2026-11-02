@@ -3,6 +3,8 @@ import { Pool, PoolClient, types } from 'pg';
 
 // `date` volta como texto AAAA-MM-DD. O padrão da biblioteca cria um Date no fuso do servidor e a data pode escorregar um dia.
 types.setTypeParser(1082, (v: string) => v);
+/** bigint (centavos) volta como número: os valores do sistema cabem com folga em 2^53. */
+types.setTypeParser(20, (v: string) => Number(v));
 import { ENV, Env } from '../config/env';
 
 /** O que o banco precisa saber para isolar os dados desta requisição (ver migração 0002). */

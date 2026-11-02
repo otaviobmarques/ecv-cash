@@ -58,3 +58,12 @@ export interface Laudo {
   custosCentavos?: number; margemCentavos?: number; custos?: { descricao: string; tipo: 'VALOR' | 'PERCENTUAL'; valorCentavos: number; geraContaPagar: boolean }[];
 }
 export interface ResultadoLote { linha: number; ok: boolean; laudo?: Laudo; erro?: string; campos?: Record<string, string> }
+
+export interface ContaCaixa { id: string; nome: string; tipo: 'CAIXA' | 'BANCO'; banco: string | null; status: 'ATIVO' | 'INATIVO'; saldoCentavos: number; fechadoAte: string | null }
+export interface LinhaExtrato {
+  id: string; data: string; valorCentavos: number; origem: string; origemId?: string | null; descricao: string; estornoDe?: string | null; motivo?: string | null;
+  planoConta?: string | null; criadoPor?: string | null; estornado?: boolean; saldoCentavos: number; saldoInicial?: boolean;
+}
+export interface Extrato { conta: { id: string; nome: string; empresaId: string }; de: string; ate: string; aberturaCentavos: number; entradasCentavos: number; saidasCentavos: number; fechoCentavos: number; itens: LinhaExtrato[] }
+export interface FechamentoDia { id: string; contaId: string; conta: string; data: string; saldoSistemaCentavos: number; saldoContadoCentavos: number; diferencaCentavos: number; observacao: string | null; status: 'FECHADO' | 'REABERTO'; fechadoPor: string | null; motivoReabertura: string | null }
+export interface FechamentoMes { id: string; mes: string; status: 'FECHADO' | 'REABERTO'; fechadoPor: string | null; motivoReabertura: string | null }

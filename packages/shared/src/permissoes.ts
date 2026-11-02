@@ -84,6 +84,7 @@ export const MATRIZ = {
   'caixa.ver': [A, G, F],
   'transferencia.criar': [A, G, F],
   'transferencia.intercompany': [A],
+  'caixa.ajustar': [A, G],
   'caixa.fechar': [A, G, F],
   'periodo.fechar': [A, G],
   'periodo.reabrir': [A],
