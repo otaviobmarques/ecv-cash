@@ -22,17 +22,30 @@ Da loja (isolamento por loja): `forma_pagamento_empresa`, `vistoriador` (visíve
 - Gatilho `laudo_protegido`: laudo cancelado não muda mais; laudo travado (futuramente faturado ou baixado) não muda valor, preço, cliente, serviço, data, placa, forma nem loja.
 - Cancelamento: o Vistoriador pede, o Gerente ou o Administrativo autoriza (não o próprio autor do pedido); motivo sempre registrado.
 
-## Planejado (por módulo)
-- **Cadastros que faltam:** `aliquota_imposto`.
-- **Laudos que faltam:** `laudo_comissao`,
-  `regra_comissao`, `fechamento_comissao`, `regra_repasse`, `repasse_apuracao`.
-- **Receber e faturas:** `titulo_receber` (1:1 com laudo), `baixa_receber` (imutável, `estorno_de`), `baixa_lote`, `fatura` (empresa × cliente × período),
-  `liquidacao_cartao`, `cheque`.
-- **Caixa:** `lancamento_financeiro` (razão de caixa), `transferencia` (marca intercompany), `fechamento_caixa`, `fechamento_periodo`.
-- **Pagar:** `titulo_pagar` (origem: manual, recorrência, royalty, comissão, custo de laudo, rateio), `pagamento` (imutável), `recorrencia_pagar`, `rateio_despesa`.
-- **Gerencial:** DRE e fluxo derivados; `saldo_patrimonial_manual` para o balanço gerencial.
-- **Cobrança e LGPD:** `regua_cobranca`, `envio_email`, `solicitacao_titular`.
+**Caixa (0006).** `lancamento_financeiro` é o razão: todo dinheiro que entra ou sai de uma conta da loja, imutável (erro se corrige com lançamento contrário, `estorno_de`). `transferencia` entre contas da mesma loja ou
+de lojas do grupo (`intercompany`, só o Administrativo). `fechamento_caixa` (dia, por conta) e `fechamento_periodo` (mês, por loja): o banco recusa lançamento em dia ou mês fechado (gatilhos), e o `laudo_protegido` também recusa laudo novo ou alterado em mês fechado.
+
+**A receber (0007).** `titulo_receber` 1:1 com o laudo (nasce no lançamento, acompanha o valor até a primeira baixa ou fatura); `baixa_receber` imutável (principal, multa, juros, perdão; estorno = linha de sinais contrários); `empresa_config` (limite de perdão do Financeiro,
+aprovação de contas a pagar, Financeiro vê DRE). Laudo com baixa ou fatura fica travado (`travado_em`).
+
+**Faturas (0008).** `fatura` por loja × cliente × período; valor, cliente, período, vencimento e regra de atraso não mudam depois de emitida (gatilho). Os dados do bloco "Como pagar" são lidos da conta marcada para a fatura na hora de gerar o PDF.
+
+**A pagar (0009).** `titulo_pagar` (rascunho, aguardando aprovação, aprovado, parcial, pago, cancelado; origem manual, recorrência, royalty, comissão, custo de laudo ou rateio), `pagamento_pagar` imutável, `recorrencia_pagar`, `anexo` (comprovantes, até 5 MB, no banco).
+`laudo_custo.titulo_pagar_id` marca o custo já apurado. Quem cria não aprova.
+
+**LGPD (0010).** `cliente.anonimizado_em`: pessoa física pode ser anonimizada; os lançamentos financeiros ficam (guarda legal de 5 anos).
+
+**Cartão e cheque (0011).** `liquidacao_cartao` (bruto, taxa, antecipação, líquido, data prevista, status previsto/liquidado/cancelado) e `cheque` (recebido, depositado, compensado, devolvido, cancelado). A baixa nessas formas não entra no caixa na hora.
+
+**Comissões (0012).** `regra_comissao` (por vistoriador e serviço, % ou valor, devida na emissão ou no recebimento), `laudo_comissao` (o que a comissão era no dia do lançamento), `fechamento_comissao` (uma conta a pagar por vistoriador).
+
+**Royalties e impostos (0013).** `regra_repasse` (% sobre bruto, líquido ou recebido, ou valor fixo), `repasse_apuracao` (mês, uma por regra), `aliquota_imposto` (por loja, com vigência sem sobreposição; só dedução do DRE).
+
+**Cobrança (0014).** `regua_cobranca` (por loja, desligada por padrão) e `envio_email` (cada envio ou tentativa, com status; o índice único impede o mesmo aviso automático duas vezes para a mesma fatura).
+
+## Ainda não existe
+Balanço gerencial (`saldo_patrimonial_manual`), consolidado da rede com eliminação de intercompany, aprovação de pagamentos em múltiplos níveis, importação por planilha, `solicitacao_titular` (hoje o pedido do titular é atendido por tela e fica na auditoria).
 
 ## Estados
 Laudo: ativo, cancelado. Título a receber: aberto, parcial, quitado, cancelado ("vencido" é derivado). Fatura: aberta, parcial, paga, cancelada.
-Título a pagar: rascunho, aguardando aprovação, aprovado, parcial, pago, cancelado. Cheque: recebido, depositado, compensado, devolvido.
+Título a pagar: rascunho, aguardando aprovação, aprovado, parcial, pago, cancelado. Cheque: recebido, depositado, compensado, devolvido. Venda no cartão: prevista, liquidada, cancelada.

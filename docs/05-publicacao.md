@@ -33,7 +33,9 @@ Instalação, primeiro usuário interno e primeiro grupo: veja `deploy/INSTALAR-
 - **API reiniciando:** `docker compose logs api` mostra a causa (geralmente variável faltando no `.env`).
 - **Mudou a senha no `.env` e o banco não aceita:** as senhas do banco são gravadas na primeira subida. Troque-as no banco (`ALTER ROLE`) ou apague o volume (`docker compose down -v`, só em ambiente sem dados que importem).
 
+## E-mail
+Para enviar cobranças e convites, preencha `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` no `deploy/.env` e rode `docker compose up -d`. Sem isso nada é enviado (as cobranças ficam registradas como "e-mail não configurado" e o convite continua aparecendo na tela). A régua de cobrança roda todo dia às 8h (Brasília) no próprio contêiner da API.
+
 ## O que ainda não está nesta publicação
-- Envio de e-mail (convites aparecem na tela para entregar à mão).
 - Armazenamento de arquivos (logotipo), previsto com o armazenamento S3.
 - Monitoramento e alertas, banco gerenciado e backup fora do servidor automático: ficam para a produção.

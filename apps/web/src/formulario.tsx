@@ -37,3 +37,6 @@ export function CampoPercentual({ rotulo, bp, onChange, erro, dica, obrigatorio 
 export const hojeIso = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
 export const dataBr = (iso: string | null | undefined) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '—');
 export const pct = (bp: number | null | undefined) => (bp == null ? '—' : `${(bp / 100).toFixed(2).replace('.', ',')}%`);
+
+/** 1 fatura, 2 faturas. */
+export const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;

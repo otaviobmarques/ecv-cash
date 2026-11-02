@@ -24,6 +24,7 @@ Legenda: ✔ permitido · ◐ com condição · — sem acesso. Escopo: Administ
 | Contas a pagar: criar e pagar | ✔ | ✔ | ✔ | — |
 | Contas a pagar: aprovar | ✔ | ✔ | — (configurável) | — |
 | Rateio entre empresas, intercompany, reabrir período | ✔ | — | — | — |
+| Ajuste manual no caixa | ✔ | ✔ | — | — |
 | Fechar caixa | ✔ | ✔ | ✔ | — |
 | Fechar período mensal | ✔ | ✔ | — | — |
 | Relatórios operacionais e financeiros, fluxo de caixa | ✔ | ✔ | ✔ | — |
@@ -34,3 +35,6 @@ Legenda: ✔ permitido · ◐ com condição · — sem acesso. Escopo: Administ
 Backoffice (equipe interna): Plataforma (tudo), Operações (grupos e empresas), Suporte (log, redefinir acesso, "entrar como" com motivo).
 
 Regras gerais: ação sensível exige motivo e gera log; período fechado bloqueia alteração; CPF/CNPJ mascarado para o Vistoriador; quem cria pagamento não aprova.
+
+Complementos da Fase 2: o Financeiro vê o DRE só se o Administrativo liberar nas regras da loja (`financeiro_ve_dre`) e aprova contas a pagar só se liberado (`financeiro_aprova_pagar`); o limite de perdão de multa e juros do Financeiro por baixa é configurável (padrão R$ 50,00). Quem cria uma conta a pagar nunca a aprova.
+Cartões, cheques, comissões, royalties e alíquotas seguem a mesma divisão: o Administrativo configura royalties e alíquotas; Gerente e Administrativo configuram e fecham comissões; Financeiro consulta.

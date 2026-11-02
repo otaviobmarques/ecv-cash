@@ -3,7 +3,7 @@
 Sistema financeiro SaaS multiempresa para ECVs (Empresas Credenciadas de Vistoria): laudos, contas a receber e a pagar,
 faturados, caixa, relatórios e visão contábil/gerencial. Desenvolvido pela agência REDBOX.
 
-> Estado: **Fundação**, **app dos clientes** (login, empresas, usuários, aparência, auditoria), **backoffice** (grupos, 2FA, suporte) **Cadastros** (clientes e preços, serviços e custos, fornecedores, vistoriadores, formas de pagamento, contas bancárias, plano de contas) e **Laudos** (lançamento, lote, revisão de valor manual, cancelamento) prontos. Próximo módulo: contas a receber.
+> Estado: **Fase 1 (MVP) e Fase 2 prontas**: laudos, caixa, contas a receber, faturados (PDF e QR PIX), contas a pagar, cartão e cheque, comissões, royalties, alíquotas, relatórios, DRE, fluxo de caixa e cobrança por e-mail. Falta a Fase 3 (consolidado da rede, balanço gerencial, importação por planilha).
 > Roadmap em [`docs/04-roadmap.md`](docs/04-roadmap.md).
 
 ## Documentação
@@ -38,7 +38,9 @@ Use sempre `localhost` no navegador (a API só aceita essa origem com cookie).
 **Primeiro usuário do backoffice** (equipe interna): `pnpm --filter @ecv/api bo:criar-interno "Seu Nome" voce@empresa.com PLATAFORMA`.
 Ele imprime uma senha provisória. No primeiro login o backoffice pede para ligar o aplicativo autenticador (2FA).
 
-**Verificação no navegador:** `pnpm e2e <senha provisória>` percorre criar grupo, convite, login, telas e suporte (ver `e2e/smoke.ts`). `pnpm e2e:cadastros` percorre as telas de Cadastros com os dados do `db:seed` (ver `e2e/cadastros.ts`). `pnpm e2e:laudos` percorre o lançamento de laudos como Vistoriador e Gerente (ver `e2e/laudos.ts`; precisa de `pnpm db:seed`).
+**Verificação no navegador:** `pnpm e2e <senha provisória>` percorre criar grupo, convite, login, telas e suporte (ver `e2e/smoke.ts`). `pnpm e2e:cadastros` percorre as telas de Cadastros com os dados do `db:seed` (ver `e2e/cadastros.ts`). `pnpm e2e:laudos` percorre o lançamento de laudos como Vistoriador e Gerente (ver `e2e/laudos.ts`; precisa de `pnpm db:seed`). `pnpm e2e:financeiro` percorre receber, faturados, pagar, cartões, comissões, DRE e painel (ver `e2e/financeiro.ts`).
+
+**E-mail:** sem `SMTP_HOST` nada é enviado: as cobranças ficam registradas como "e-mail não configurado". Variáveis: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, `SMTP_FROM`. A régua roda sozinha todo dia quando `AGENDADOR=true` (hora em `HORA_COBRANCA`, padrão 8h de Brasília), em um único processo da API.
 
 ## Testes
 ```bash

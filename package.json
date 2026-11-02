@@ -16,6 +16,7 @@
     "dev:backoffice": "pnpm --filter @ecv/backoffice dev",
     "e2e": "tsx e2e/smoke.ts",
     "e2e:cadastros": "tsx e2e/cadastros.ts",
-    "e2e:laudos": "tsx e2e/laudos.ts"
+    "e2e:laudos": "tsx e2e/laudos.ts",
+    "e2e:financeiro": "tsx e2e/financeiro.ts"
   }
 }

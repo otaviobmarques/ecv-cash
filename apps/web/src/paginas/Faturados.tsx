@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import { formatarBRL, periodoSugerido } from '@ecv/shared';
 import { Aviso, Botao, Campo, Carregando, Dialogo, ErroApi, Pilula, Selecao, useToast } from '@ecv/ui';
 import { API_BASE, api } from '../api';
-import { CampoDinheiro, dataBr, hojeIso, mensagemDoErro } from '../formulario';
+import { CampoDinheiro, dataBr, hojeIso, mensagemDoErro, plural } from '../formulario';
 import type { ClienteItem, ContaCaixa, Eu, FaturaDetalhe, FaturaItem, FormaPagamento, PixFatura, PreviaCliente } from '../tipos';
 
 const SITUACAO = { abertas: 'Em aberto', vencidas: 'Vencidas', pagas: 'Pagas', canceladas: 'Canceladas', todas: 'Todas' } as const;
@@ -43,7 +43,7 @@ export function Faturados() {
         </div>
       </form>
       <div className="cartao pilha">
-        {lista.data && <span className="mut">{lista.data.total} faturas · saldo em aberto nesta lista: {formatarBRL(saldo)}</span>}
+        {lista.data && <span className="mut">{plural(lista.data.total, 'fatura', 'faturas')} · saldo em aberto nesta lista: {formatarBRL(saldo)}</span>}
         {lista.isLoading ? <Carregando /> : lista.isError ? <Aviso tipo="erro">{mensagemDoErro(lista.error)}</Aviso> : (
           <div className="tw"><table>
             <thead><tr><th>Nº</th><th>Cliente</th><th>Período</th><th>Emissão</th><th>Vencimento</th><th className="num">Valor</th><th className="num">Saldo</th><th>Situação</th><th /></tr></thead>
@@ -78,7 +78,7 @@ function Gerar({ aberto, onFechar, onVer }: { aberto: boolean; onFechar: () => v
   const clientes = previa.data?.clientes ?? [];
   const gerar = useMutation({
     mutationFn: () => api.post<{ geradas: number; erros: number; resultados: { clienteId: string; ok: boolean; fatura?: { id: string; numero: number }; erro?: string }[] }>('/faturas', { periodoIni: p.ini, periodoFim: p.fim, clienteIds: [...escolhidos] }),
-    onSuccess: (r) => { setRes(r.resultados); setErro(null); qc.invalidateQueries({ queryKey: ['faturas'] }); qc.invalidateQueries({ queryKey: ['receber'] }); avisar(r.erros ? `${r.geradas} faturas geradas, ${r.erros} com problema.` : `${r.geradas} faturas geradas.`); setEscolhidos(new Set()); },
+    onSuccess: (r) => { setRes(r.resultados); setErro(null); qc.invalidateQueries({ queryKey: ['faturas'] }); qc.invalidateQueries({ queryKey: ['receber'] }); avisar(r.erros ? `${plural(r.geradas, 'fatura gerada', 'faturas geradas')}, ${r.erros} com problema.` : `${plural(r.geradas, 'fatura gerada', 'faturas geradas')}.`); setEscolhidos(new Set()); },
     onError: (e) => setErro(mensagemDoErro(e)),
   });
   const alternar = (id: string) => setEscolhidos((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -112,7 +112,7 @@ function Gerar({ aberto, onFechar, onVer }: { aberto: boolean; onFechar: () => v
             <span>{r.ok ? `Fatura nº ${r.fatura!.numero}` : r.erro}</span>{r.ok && <Botao variante="sec" pequeno onClick={() => onVer(r.fatura!.id)}>Abrir</Botao>}
           </div>
         ))}
-        <Botao carregando={gerar.isPending} disabled={escolhidos.size === 0} onClick={() => gerar.mutate()}>Gerar {escolhidos.size || ''} faturas</Botao>
+        <Botao carregando={gerar.isPending} disabled={escolhidos.size === 0} onClick={() => gerar.mutate()}>Gerar {escolhidos.size ? plural(escolhidos.size, 'fatura', 'faturas') : 'faturas'}</Botao>
       </div>
     </Dialogo>
   );

@@ -30,5 +30,11 @@ Idioma: tudo em português do Brasil (código de domínio, mensagens, commits). 
 14. **Conta que aparece na fatura**: qualquer mudança nos dados bancários, na chave PIX ou na visibilidade exige confirmação do Administrativo com senha; o pedido do Gerente fica pendente e a conta não muda até a aprovação.
 15. **Laudo**: o preço do dia, o valor cobrado e os custos ficam gravados no laudo. Valor diferente da tabela só Gerente/Administrativo, com motivo; sem preço cadastrado vale o valor digitado e o laudo entra na fila de revisão. Vistoriador lança só o dia atual e só como ele mesmo. Cancelar = pedido (Vistoriador) + autorização (Gerente/Administrativo, nunca o próprio autor). Margem e custos só com `relatorio.margem`.
 
+16. **Dinheiro só entra e sai pelo razão** (`caixa/razao.ts`, `registrarLancamento`). Lançamento, baixa e pagamento são imutáveis: erro se corrige com registro contrário e motivo. Dia de caixa fechado e mês fechado são recusados pelo banco.
+17. **Baixa** (`receber/baixa.ts`) é o único caminho para receber: multa e juros do dia sobre a parte paga, perdão com motivo e limite, laudo travado enquanto houver baixa ou fatura. Cartão e cheque não entram no caixa na baixa (só na liquidação e na compensação).
+18. **Contas a pagar**: quem cria não aprova (nem o Administrativo). Comissão, royalty, custo de laudo, recorrência e rateio nascem como contas a pagar pelo mesmo caminho (`pagar/titulo-pagar.ts`).
+19. **E-mail** só pelo `Mailer`; sem SMTP o envio é registrado como "e-mail não configurado", nunca como enviado. O mesmo aviso automático não sai duas vezes (índice único).
+20. **Migrações novas** seguem a numeração; relatório novo entra em `RELATORIOS` com a permissão certa e, se exporta, passa pela auditoria.
+
 ## Estado
-Fundação, app dos clientes (login, empresas, usuários, aparência, auditoria) e backoffice (grupos, 2FA, suporte) concluídos. Cadastros e Laudos (banco, API e telas) concluídos. Próximo: contas a receber (o título nasce do laudo; hoje o laudo ainda não gera título). Ver `docs/04-roadmap.md`.
+Fases 1 e 2 concluídas (banco, API, telas e testes): cadastros, laudos, caixa, a receber, faturados, a pagar, relatórios e painel, LGPD básica, cartão, cheque, comissões, royalties, alíquotas, DRE, fluxo de caixa e cobrança por e-mail. Publicação em `deploy/`. Próximo: Fase 3 (consolidado da rede, balanço gerencial, importação por planilha). Ver `docs/04-roadmap.md`.

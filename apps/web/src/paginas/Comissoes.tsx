@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import { formatarBRL } from '@ecv/shared';
 import { Aviso, Botao, Campo, Carregando, Dialogo, ErroApi, Pilula, Selecao, useToast } from '@ecv/ui';
 import { api } from '../api';
-import { CampoDinheiro, CampoPercentual, dataBr, hojeIso, mensagemDoErro, pct } from '../formulario';
+import { CampoDinheiro, CampoPercentual, dataBr, hojeIso, mensagemDoErro, pct, plural } from '../formulario';
 import type { ApuracaoComissao, Eu, FechamentoComissao, RegraComissao, Servico, VistoriadorItem } from '../tipos';
 
 export function Comissoes() {
@@ -29,7 +29,7 @@ function Apuracao({ eu }: { eu: Eu }) {
   const [erro, setErro] = useState<string | null>(null);
   const fechar = useMutation({
     mutationFn: () => api.post<{ fechamentos: number }>('/comissoes/fechar', p),
-    onSuccess: (r) => { avisar(r.fechamentos ? `${r.fechamentos} contas a pagar criadas.` : 'Nada a fechar neste período.'); setErro(null); qc.invalidateQueries({ queryKey: ['comissoes'] }); qc.invalidateQueries({ queryKey: ['pagar'] }); },
+    onSuccess: (r) => { avisar(r.fechamentos ? `${plural(r.fechamentos, 'conta a pagar criada', 'contas a pagar criadas')}.` : 'Nada a fechar neste período.'); setErro(null); qc.invalidateQueries({ queryKey: ['comissoes'] }); qc.invalidateQueries({ queryKey: ['pagar'] }); },
     onError: (e) => setErro(mensagemDoErro(e)),
   });
   const total = lista.data?.reduce((s, x) => s + x.totalCentavos, 0) ?? 0;

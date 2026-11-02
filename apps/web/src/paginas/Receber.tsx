@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import { formatarBRL } from '@ecv/shared';
 import { Aviso, Botao, Campo, Carregando, Dialogo, ErroApi, Pilula, Selecao, useToast } from '@ecv/ui';
 import { api } from '../api';
-import { CampoDinheiro, dataBr, hojeIso, mensagemDoErro } from '../formulario';
+import { CampoDinheiro, dataBr, hojeIso, mensagemDoErro, plural } from '../formulario';
 import type { ClienteItem, ConfigFinanceira, ContaCaixa, Eu, FormaPagamento, SimulacaoBaixa, TituloDetalhe, TituloItem } from '../tipos';
 
 const SITUACAO = { abertos: 'Em aberto', vencidos: 'Vencidos', quitados: 'Quitados', cancelados: 'Cancelados', todos: 'Todos' } as const;
@@ -64,7 +64,7 @@ export function Receber() {
       </form>
       <div className="cartao pilha">
         <div className="linha entre">
-          <span className="mut">{lista.data ? `${lista.data.total} títulos · saldo em aberto ${formatarBRL(lista.data.saldoAbertoCentavos)}` : ' '}</span>
+          <span className="mut">{lista.data ? `${plural(lista.data.total, 'título', 'títulos')} · saldo em aberto ${formatarBRL(lista.data.saldoAbertoCentavos)}` : ' '}</span>
           {podeBaixar && <Botao disabled={marcados.length === 0} onClick={() => setLote(true)}>Baixar {marcados.length || ''} selecionados</Botao>}
         </div>
         {lista.isLoading ? <Carregando /> : lista.isError ? <Aviso tipo="erro">{mensagemDoErro(lista.error)}</Aviso> : (

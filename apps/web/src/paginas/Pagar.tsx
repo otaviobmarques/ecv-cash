@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import { formatarBRL } from '@ecv/shared';
 import { Aviso, Botao, Campo, Carregando, Dialogo, ErroApi, Pilula, Selecao, useToast } from '@ecv/ui';
 import { API_BASE, api, enviarArquivo } from '../api';
-import { CampoDinheiro, dataBr, hojeIso, mensagemDoErro } from '../formulario';
+import { CampoDinheiro, dataBr, hojeIso, mensagemDoErro, plural } from '../formulario';
 import type { ContaCaixa, CustoAApurar, Empresa, Eu, Fornecedor, PlanoConta, Recorrencia, StatusPagar, TituloPagar, TituloPagarDetalhe } from '../tipos';
 
 const SITUACAO = { abertos: 'A pagar', vencidos: 'Vencidas', pendentes: 'Aguardando aprovação', rascunhos: 'Rascunhos', pagos: 'Pagas', cancelados: 'Canceladas', todos: 'Todas' } as const;
@@ -63,7 +63,7 @@ export function Pagar() {
             </div>
           </form>
           <div className="cartao pilha">
-            {lista.data && <span className="mut">{lista.data.total} contas · saldo a pagar nesta lista: {formatarBRL(lista.data.saldoCentavos)}</span>}
+            {lista.data && <span className="mut">{plural(lista.data.total, 'conta', 'contas')} · saldo a pagar nesta lista: {formatarBRL(lista.data.saldoCentavos)}</span>}
             {lista.isLoading ? <Carregando /> : lista.isError ? <Aviso tipo="erro">{mensagemDoErro(lista.error)}</Aviso> : (
               <div className="tw"><table>
                 <thead><tr><th>Vencimento</th><th>Favorecido</th><th>Descrição</th><th>Origem</th><th className="num">Valor</th><th className="num">Saldo</th><th>Situação</th></tr></thead>
@@ -273,7 +273,7 @@ function Custos({ onMudou }: { onMudou: () => void }) {
   const [erro, setErro] = useState<string | null>(null);
   const m = useMutation({
     mutationFn: () => api.post<{ titulos: number }>('/pagar/custos-a-apurar', { de: p.de, ate: p.ate, vencimento: venc || undefined }),
-    onSuccess: (r) => { avisar(`${r.titulos} contas a pagar criadas.`); setErro(null); qc.invalidateQueries({ queryKey: ['pagar'] }); onMudou(); }, onError: (e) => setErro(mensagemDoErro(e)),
+    onSuccess: (r) => { avisar(`${plural(r.titulos, 'conta a pagar criada', 'contas a pagar criadas')}.`); setErro(null); qc.invalidateQueries({ queryKey: ['pagar'] }); onMudou(); }, onError: (e) => setErro(mensagemDoErro(e)),
   });
   const total = prev.data?.reduce((s, x) => s + x.totalCentavos, 0) ?? 0;
   return (

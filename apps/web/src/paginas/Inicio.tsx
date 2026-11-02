@@ -3,7 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { ROTULO_PERFIL, formatarBRL } from '@ecv/shared';
 import { Aviso, Carregando, Pilula } from '@ecv/ui';
 import { api } from '../api';
-import { dataBr } from '../formulario';
+import { dataBr, plural } from '../formulario';
 import type { Empresa, Eu, Painel } from '../tipos';
 
 function Numero({ rotulo, valor, nota, alerta, para }: { rotulo: string; valor: string; nota?: string; alerta?: boolean; para?: string }) {
@@ -67,9 +67,9 @@ export function Inicio() {
           </div>
           {((d.manuaisARevisar ?? 0) > 0 || (d.pedidosCancelamento ?? 0) > 0 || (d.pendentesAprovacao ?? 0) > 0) && (
             <div className="cartao pilha"><h2>Para resolver</h2>
-              {(d.manuaisARevisar ?? 0) > 0 && <Link to="/laudos">{d.manuaisARevisar} laudos com preço digitado aguardam revisão</Link>}
-              {(d.pedidosCancelamento ?? 0) > 0 && <Link to="/laudos">{d.pedidosCancelamento} pedidos de cancelamento de laudo</Link>}
-              {(d.pendentesAprovacao ?? 0) > 0 && <Link to="/pagar">{d.pendentesAprovacao} contas a pagar aguardando aprovação</Link>}
+              {(d.manuaisARevisar ?? 0) > 0 && <Link to="/laudos">{d.manuaisARevisar === 1 ? '1 laudo com preço digitado aguarda revisão' : `${d.manuaisARevisar} laudos com preço digitado aguardam revisão`}</Link>}
+              {(d.pedidosCancelamento ?? 0) > 0 && <Link to="/laudos">{plural(d.pedidosCancelamento ?? 0, 'pedido', 'pedidos')} de cancelamento de laudo</Link>}
+              {(d.pendentesAprovacao ?? 0) > 0 && <Link to="/pagar">{d.pendentesAprovacao === 1 ? '1 conta a pagar aguardando aprovação' : `${d.pendentesAprovacao} contas a pagar aguardando aprovação`}</Link>}
             </div>
           )}
           {d.serie && <div className="cartao pilha"><h2>Faturamento dos últimos 30 dias</h2><Serie serie={d.serie} /></div>}
