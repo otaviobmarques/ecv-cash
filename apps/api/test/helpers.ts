@@ -8,12 +8,29 @@ import { carregarEnv } from '../src/config/env';
 import { configurar } from '../src/configurar';
 import { DbService } from '../src/db/db.service';
 import { criarGrupoCompleto } from '../src/db/seed-lib';
+import { Mailer, type MensagemEmail, type ResultadoEnvio } from '../src/mail/mailer';
+
+/** Caixa de saída de mentira: guarda o que seria enviado e deixa o teste escolher se o envio dá certo, falha ou não está configurado. */
+export class MailerFalso extends Mailer {
+  configurado = true;
+  modo: 'ok' | 'erro' | 'semConfiguracao' = 'ok';
+  enviados: MensagemEmail[] = [];
+  convites: { para: string; link: string }[] = [];
+  async enviar(m: MensagemEmail): Promise<ResultadoEnvio> {
+    if (this.modo === 'erro') return { ok: false, configurado: true, erro: 'O servidor de e-mail recusou ou não respondeu. Tente de novo mais tarde.' };
+    if (this.modo === 'semConfiguracao') return { ok: false, configurado: false, erro: 'O envio de e-mail não está configurado neste ambiente.' };
+    this.enviados.push(m); return { ok: true };
+  }
+  async enviarConvite(para: string, _nome: string, link: string) { this.convites.push({ para, link }); }
+}
 
 export const ORIGEM = 'http://app.test';
 export const SENHA = 'Senha-de-teste-1';
 
-export async function subirApp() {
-  const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
+export async function subirApp(opcoes: { mailer?: Mailer } = {}) {
+  const construtor = Test.createTestingModule({ imports: [AppModule] });
+  if (opcoes.mailer) construtor.overrideProvider(Mailer).useValue(opcoes.mailer);
+  const mod = await construtor.compile();
   const app: INestApplication = mod.createNestApplication();
   configurar(app, carregarEnv());
   await app.init();

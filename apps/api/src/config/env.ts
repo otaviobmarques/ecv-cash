@@ -12,6 +12,16 @@ const schema = z.object({
   URL_BACKOFFICE: z.string().default('http://localhost:5174'),
   /** Quantos proxies existem na frente da API (para enxergar o IP real de quem acessa). Com Traefik e Caddy em fila, são 2. */
   TRUST_PROXY_SALTOS: z.coerce.number().int().min(0).max(5).default(1),
+  /** Envio de e-mail. Sem SMTP_HOST nada é enviado: os pedidos ficam registrados como "sem configuração". */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false'),
+  SMTP_FROM: z.string().default('ECV Cash <nao-responda@localhost>'),
+  /** Roda a régua de cobrança todo dia, na hora indicada (Brasília). Ligar em um único processo da API. */
+  AGENDADOR: z.enum(['true', 'false']).default('false'),
+  HORA_COBRANCA: z.coerce.number().int().min(0).max(23).default(8),
   /** 32 bytes em base64. Cifra segredos de 2FA e assina tickets. Obrigatória em produção. */
   CHAVE_SEGREDOS: z.string().optional(),
 });

@@ -111,7 +111,7 @@ export class FaturasService {
     });
   }
 
-  private async ler(c: PoolClient, id: string) {
+  async ler(c: PoolClient, id: string) {
     const f = (await c.query(`SELECT ${COLS_FATURA} FROM fatura f JOIN cliente cl ON cl.id = f.cliente_id WHERE f.id = $1`, [id])).rows[0];
     if (!f) throw new NotFoundException('Fatura não encontrada.');
     return f as Record<string, unknown> & { id: string; empresaId: string; status: string; vencimento: string; totalCentavos: number; multaBp: number; jurosMesBp: number };
@@ -234,33 +234,49 @@ export class FaturasService {
     return { disponivel: true as const, valorCentavos: valor, copiaECola, conta: conta.nome, titular: conta.titular, contas };
   }
 
-  /** PDF da fatura, com o logo da loja quando existir, as cores do tema e o bloco "Como pagar". */
+  /** Tudo o que o PDF precisa, lido na transação de quem chama. */
+  async dadosPdf(c: PoolClient, f: Awaited<ReturnType<FaturasService['ler']>>) {
+    const hoje = hojeSP();
+    const titulos = await this.titulosDaFatura(c, f, hoje);
+    const aberto = f.status === 'ABERTA' || f.status === 'PARCIAL';
+    const saldo = titulos.reduce((s, t) => s + t.saldoCentavos, 0);
+    const enc = aberto ? titulos.reduce((s, t) => s + t.multaCentavos + t.jurosCentavos, 0) : 0;
+    const recebido = Number((await c.query(`SELECT coalesce(sum(b.principal_centavos), 0) AS v FROM baixa_receber b JOIN titulo_receber t ON t.id = b.titulo_id WHERE t.fatura_id = $1`, [f.id])).rows[0].v);
+    const emp = (await c.query('SELECT razao_social AS razao, nome_fantasia AS fantasia, cnpj, cidade, uf, email_financeiro AS email FROM empresa WHERE id = $1', [f.empresaId])).rows[0];
+    const cor = (await c.query(`SELECT cor_primaria AS cor FROM tema WHERE empresa_id = $1 OR empresa_id IS NULL ORDER BY empresa_id NULLS LAST LIMIT 1`, [f.empresaId])).rows[0]?.cor ?? '#104B3A';
+    const contas = aberto ? await this.contasDaFatura(c, f.empresaId) : [];
+    const pix = aberto ? await this.pixDaFatura(c, f) : null;
+    return {
+      empresa: emp, cor,
+      fatura: { ...(f as never as DadosFatura), diasAtraso: Math.max(0, Math.round((Date.parse(hoje) - Date.parse(f.vencimento)) / 86_400_000)) },
+      titulos: titulos.filter((t) => t.status !== 'CANCELADO'), totalCentavos: f.totalCentavos, recebidoCentavos: recebido, saldoCentavos: saldo, encargosCentavos: enc, totalHojeCentavos: saldo + enc,
+      contas, pix: pix && pix.disponivel ? { copiaECola: pix.copiaECola, valorCentavos: pix.valorCentavos } : null,
+      geradoEm: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+      numero: f.numero as number, cliente: f.cliente as string,
+    };
+  }
+
+  private async gerarArquivo(dados: Awaited<ReturnType<FaturasService['dadosPdf']>>): Promise<{ nome: string; pdf: Buffer }> {
+    const { numero, cliente, ...resto } = dados;
+    const pdf = await gerarPdfFatura(resto as never);
+    return { nome: `fatura-${numero}-${String(cliente).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.pdf`, pdf };
+  }
+
+  /** PDF da fatura, com as cores do tema e o bloco "Como pagar". */
   async pdf(a: Acesso, id: string): Promise<{ nome: string; pdf: Buffer }> {
     const dados = await this.db.tenant(contextoDb(a), async (c) => {
       const f = await this.ler(c, id);
       exigir(a, 'receber.ver', f.empresaId);
-      const hoje = hojeSP();
-      const titulos = await this.titulosDaFatura(c, f, hoje);
-      const aberto = f.status === 'ABERTA' || f.status === 'PARCIAL';
-      const saldo = titulos.reduce((s, t) => s + t.saldoCentavos, 0);
-      const enc = aberto ? titulos.reduce((s, t) => s + t.multaCentavos + t.jurosCentavos, 0) : 0;
-      const recebido = Number((await c.query(`SELECT coalesce(sum(b.principal_centavos), 0) AS v FROM baixa_receber b JOIN titulo_receber t ON t.id = b.titulo_id WHERE t.fatura_id = $1`, [id])).rows[0].v);
-      const emp = (await c.query('SELECT razao_social AS razao, nome_fantasia AS fantasia, cnpj, cidade, uf, email_financeiro AS email FROM empresa WHERE id = $1', [f.empresaId])).rows[0];
-      const cor = (await c.query(`SELECT cor_primaria AS cor FROM tema WHERE empresa_id = $1 OR empresa_id IS NULL ORDER BY empresa_id NULLS LAST LIMIT 1`, [f.empresaId])).rows[0]?.cor ?? '#104B3A';
-      const contas = aberto ? await this.contasDaFatura(c, f.empresaId) : [];
-      const pix = aberto ? await this.pixDaFatura(c, f) : null;
-      return {
-        empresa: emp, cor,
-        fatura: { ...(f as never as DadosFatura), diasAtraso: Math.max(0, Math.round((Date.parse(hoje) - Date.parse(f.vencimento)) / 86_400_000)) },
-        titulos: titulos.filter((t) => t.status !== 'CANCELADO'), totalCentavos: f.totalCentavos, recebidoCentavos: recebido, saldoCentavos: saldo, encargosCentavos: enc, totalHojeCentavos: saldo + enc,
-        contas, pix: pix && pix.disponivel ? { copiaECola: pix.copiaECola, valorCentavos: pix.valorCentavos } : null,
-        geradoEm: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-        numero: f.numero as number, cliente: f.cliente as string,
-      };
+      return this.dadosPdf(c, f);
     });
-    const { numero, cliente, ...resto } = dados;
-    const pdf = await gerarPdfFatura(resto as never);
-    return { nome: `fatura-${numero}-${String(cliente).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.pdf`, pdf };
+    return this.gerarArquivo(dados);
+  }
+
+  /** Para o sistema (régua de cobrança): sem checar perfil, na transação de quem chama. */
+  async pdfInterno(c: PoolClient, id: string) {
+    const f = await this.ler(c, id);
+    const dados = await this.dadosPdf(c, f);
+    return { ...(await this.gerarArquivo(dados)), dados };
   }
 }
 type DadosFatura = { numero: number; cliente: string; periodoIni: string; periodoFim: string; emissao: string; vencimento: string; status: string; numeroNf: string | null; numeroBoleto: string | null; observacao: string | null; diasAtraso: number };

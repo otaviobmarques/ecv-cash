@@ -50,6 +50,16 @@ services:
       URL_APP: https://app.${DOMINIO}
       URL_BACKOFFICE: https://admin.${DOMINIO}
       EXPOR_CONVITE: "true"
+      # e-mail: sem SMTP_HOST nada é enviado e as cobranças ficam registradas como "e-mail não configurado"
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM: ${SMTP_FROM:-ECV Cash <nao-responda@localhost>}
+      # a régua de cobrança roda todo dia de manhã (um único processo da API)
+      AGENDADOR: "true"
+      HORA_COBRANCA: ${HORA_COBRANCA:-8}
       # Traefik -> Caddy -> API: dois proxies na frente
       TRUST_PROXY_SALTOS: "2"
     networks: [interna]

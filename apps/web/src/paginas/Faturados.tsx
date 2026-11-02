@@ -19,7 +19,7 @@ export function Faturados() {
   const ativa = eu.empresaAtivaId;
   const [f, setF] = useState({ situacao: 'abertas' as Sit, clienteId: '', de: '', ate: '' });
   const [aplicado, setAplicado] = useState(f);
-  const [sel, setSel] = useState<string | null>(null); const [gerar, setGerar] = useState(false);
+  const [sel, setSel] = useState<string | null>(null); const [gerar, setGerar] = useState(false); const [cobranca, setCobranca] = useState(false);
   const clientes = useQuery({ queryKey: ['clientes', ''], queryFn: () => api.get<ClienteItem[]>('/clientes?busca='), enabled: !!ativa });
   const qs = new URLSearchParams({ situacao: aplicado.situacao });
   (['clienteId', 'de', 'ate'] as const).forEach((k) => { if (aplicado[k]) qs.set(k, aplicado[k]); });
@@ -31,7 +31,7 @@ export function Faturados() {
     <div className="pilha estreito">
       <div className="cabeca">
         <div><h1>Faturados</h1><p className="mut">Uma fatura por cliente e período, com PDF, QR Code PIX e baixa total ou parcial.</p></div>
-        {eu.permissoes.includes('fatura.gerar') && <Botao onClick={() => setGerar(true)}>Gerar faturas</Botao>}
+        <div className="linha">{eu.permissoes.includes('receber.ver') && <Botao variante="sec" onClick={() => setCobranca(true)}>Cobrança por e-mail</Botao>}{eu.permissoes.includes('fatura.gerar') && <Botao onClick={() => setGerar(true)}>Gerar faturas</Botao>}</div>
       </div>
       <form className="cartao" onSubmit={(e) => { e.preventDefault(); setAplicado(f); }}>
         <div className="linha">
@@ -62,6 +62,7 @@ export function Faturados() {
         )}
       </div>
       <Detalhe id={sel} eu={eu} onFechar={() => setSel(null)} />
+      <Cobranca aberto={cobranca} eu={eu} onFechar={() => setCobranca(false)} />
       <Gerar aberto={gerar} onFechar={() => setGerar(false)} onVer={(id) => { setGerar(false); setSel(id); }} />
     </div>
   );
@@ -133,6 +134,7 @@ function Detalhe({ id, eu, onFechar }: { id: string | null; eu: Eu; onFechar: ()
   const falha = (e: unknown) => { setErro(mensagemDoErro(e)); setCampos((e as ErroApi).campos ?? {}); };
   const baixar = useMutation({ mutationFn: () => api.post(`/faturas/${id}/baixas`, { data: f.data, principalCentavos: f.principal ?? undefined, contaId: f.conta || undefined, formaPagamentoId: f.forma || undefined, perdoarEncargos: f.perdoar || undefined, motivo: f.motivo || undefined }), onSuccess: ok('Recebimento registrado.'), onError: falha });
   const cancelar = useMutation({ mutationFn: () => api.post(`/faturas/${id}/cancelar`, { motivo: f.motivo }), onSuccess: ok('Fatura cancelada.'), onError: falha });
+  const enviarEmail = useMutation({ mutationFn: () => api.post<{ status: string; erro?: string | null }>(`/faturas/${id}/enviar-email`, {}), onSuccess: (r) => { if (r.status === 'ENVIADO') avisar('Fatura enviada por e-mail.'); else setErro(r.erro ?? 'O e-mail não foi enviado.'); recarregar(); }, onError: falha });
   const refs = useMutation({ mutationFn: () => api.patch(`/faturas/${id}`, { numeroNf: f.nf.trim() || null, numeroBoleto: f.boleto.trim() || null }), onSuccess: ok('Referências salvas.'), onError: falha });
   const aberta = t && (t.status === 'ABERTA' || t.status === 'PARCIAL');
   const copiar = async () => { try { await navigator.clipboard.writeText(pix.data!.copiaECola!); avisar('Código PIX copiado.'); } catch { avisar('Selecione o código e copie com Ctrl+C.', 'erro'); } };
@@ -174,6 +176,7 @@ function Detalhe({ id, eu, onFechar }: { id: string | null; eu: Eu; onFechar: ()
             <div className="linha">
               {aberta && eu.permissoes.includes('receber.baixar') && <Botao onClick={() => { setModo('baixar'); setF({ ...f, data: hojeIso(), principal: null, motivo: '', perdoar: false }); }}>Registrar recebimento</Botao>}
               {t.status !== 'CANCELADA' && eu.permissoes.includes('fatura.gerar') && <Botao variante="sec" onClick={() => { setModo('refs'); setF({ ...f, nf: t.numeroNf ?? '', boleto: t.numeroBoleto ?? '' }); }}>NF e boleto</Botao>}
+              {aberta && eu.permissoes.includes('fatura.gerar') && <Botao variante="sec" carregando={enviarEmail.isPending} onClick={() => enviarEmail.mutate()}>Enviar por e-mail</Botao>}
               {aberta && eu.permissoes.includes('fatura.cancelar') && <Botao variante="perigo" onClick={() => { setModo('cancelar'); setF({ ...f, motivo: '' }); }}>Cancelar fatura</Botao>}
             </div>
           )}
@@ -208,6 +211,53 @@ function Detalhe({ id, eu, onFechar }: { id: string | null; eu: Eu; onFechar: ()
               <div className="linha"><Botao variante="perigo" carregando={cancelar.isPending} onClick={() => cancelar.mutate()}>Cancelar fatura</Botao><Botao variante="sec" onClick={() => { setModo(null); setErro(null); }}>Voltar</Botao></div>
             </div>
           )}
+        </div>
+      )}
+    </Dialogo>
+  );
+}
+
+const ROTULO_STATUS_EMAIL: Record<string, string> = { ENVIADO: 'Enviado', ERRO: 'Erro no envio', SEM_CONFIGURACAO: 'E-mail não configurado', SEM_DESTINATARIO: 'Sem e-mail do cliente', PENDENTE: 'Pendente' };
+const ROTULO_TIPO_EMAIL: Record<string, string> = { FATURA: 'Fatura nova', LEMBRETE: 'Lembrete', ATRASO: 'Aviso de atraso', MANUAL: 'Envio manual' };
+
+function Cobranca({ aberto, eu, onFechar }: { aberto: boolean; eu: Eu; onFechar: () => void }) {
+  const qc = useQueryClient(); const { avisar } = useToast();
+  const regua = useQuery({ queryKey: ['cobranca', 'regua', eu.empresaAtivaId], enabled: aberto, queryFn: () => api.get<{ ativa: boolean; enviarAoGerar: boolean; diasAntes: number[]; diasApos: number[]; copiaPara: string | null; smtpConfigurado: boolean }>('/cobranca/regua') });
+  const envios = useQuery({ queryKey: ['cobranca', 'envios', eu.empresaAtivaId], enabled: aberto, queryFn: () => api.get<{ id: string; fatura: number; cliente: string; tipo: string; status: string; erro: string | null; criadoEm: string; para: string[] }[]>('/cobranca/envios') });
+  const [f, setF] = useState<{ ativa: boolean; enviarAoGerar: boolean; antes: string; apos: string; copia: string } | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  if (regua.data && !f) setF({ ativa: regua.data.ativa, enviarAoGerar: regua.data.enviarAoGerar, antes: regua.data.diasAntes.join(', '), apos: regua.data.diasApos.join(', '), copia: regua.data.copiaPara ?? '' });
+  const lista = (t: string) => t.split(/[,;\s]+/).filter(Boolean).map(Number);
+  const salvar = useMutation({
+    mutationFn: () => api.put('/cobranca/regua', { ativa: f!.ativa, enviarAoGerar: f!.enviarAoGerar, diasAntes: lista(f!.antes), diasApos: lista(f!.apos), copiaPara: f!.copia || null }),
+    onSuccess: () => { avisar('Régua de cobrança salva.'); setErro(null); qc.invalidateQueries({ queryKey: ['cobranca'] }); }, onError: (e) => setErro(mensagemDoErro(e)),
+  });
+  const agora = useMutation({
+    mutationFn: () => api.post<{ ativa: boolean; enviados: number; semConfiguracao: number; semDestinatario: number; erros: number }>('/cobranca/processar'),
+    onSuccess: (r) => { avisar(!r.ativa ? 'A régua está desligada.' : `${r.enviados} e-mails enviados${r.erros || r.semConfiguracao || r.semDestinatario ? `, ${r.erros + r.semConfiguracao + r.semDestinatario} com problema (veja o histórico)` : ''}.`); qc.invalidateQueries({ queryKey: ['cobranca'] }); }, onError: (e) => setErro(mensagemDoErro(e)),
+  });
+  const pode = eu.permissoes.includes('regua_cobranca.editar');
+  return (
+    <Dialogo aberto={aberto} onFechar={onFechar} titulo="Cobrança por e-mail" lateral>
+      {!f ? <Carregando /> : (
+        <div className="pilha">
+          {erro && <Aviso tipo="erro">{erro}</Aviso>}
+          {regua.data && !regua.data.smtpConfigurado && <Aviso tipo="aviso">O envio de e-mail ainda não está configurado neste ambiente. As cobranças ficam registradas como "e-mail não configurado" e nada sai até a equipe técnica configurar o servidor de e-mail.</Aviso>}
+          <label className="check"><input type="checkbox" disabled={!pode} checked={f.ativa} onChange={(e) => setF({ ...f, ativa: e.target.checked })} />Régua de cobrança ligada (todo dia pela manhã)</label>
+          <label className="check"><input type="checkbox" disabled={!pode} checked={f.enviarAoGerar} onChange={(e) => setF({ ...f, enviarAoGerar: e.target.checked })} />Enviar a fatura por e-mail assim que ela for gerada</label>
+          <Campo rotulo="Lembrar quantos dias antes do vencimento" disabled={!pode} value={f.antes} onChange={(e) => setF({ ...f, antes: e.target.value })} dica="Ex.: 3, 1. Até 5 prazos." />
+          <Campo rotulo="Avisar quantos dias depois do vencimento" disabled={!pode} value={f.apos} onChange={(e) => setF({ ...f, apos: e.target.value })} dica="Ex.: 1, 7, 15. Cada aviso sai uma única vez por fatura." />
+          <Campo rotulo="Mandar cópia para (opcional)" disabled={!pode} value={f.copia} onChange={(e) => setF({ ...f, copia: e.target.value })} />
+          {pode && <div className="linha"><Botao carregando={salvar.isPending} onClick={() => salvar.mutate()}>Salvar</Botao><Botao variante="sec" carregando={agora.isPending} onClick={() => agora.mutate()}>Enviar as cobranças de hoje agora</Botao></div>}
+          <h3>Histórico de envios</h3>
+          <div className="tw"><table>
+            <thead><tr><th>Quando</th><th>Fatura</th><th>Tipo</th><th>Situação</th></tr></thead>
+            <tbody>
+              {envios.data?.map((e) => <tr key={e.id}><td>{new Date(e.criadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</td><td>{e.fatura}<div className="peq mut">{e.cliente}</div></td><td>{ROTULO_TIPO_EMAIL[e.tipo]}</td>
+                <td>{e.status === 'ENVIADO' ? <Pilula tipo="ok">✓ {ROTULO_STATUS_EMAIL[e.status]}</Pilula> : <Pilula tipo={e.status === 'ERRO' ? 'erro' : 'aviso'}>{ROTULO_STATUS_EMAIL[e.status]}</Pilula>}{e.erro && <div className="peq mut">{e.erro}</div>}</td></tr>)}
+              {envios.data?.length === 0 && <tr><td colSpan={4} className="vazio">Nenhum e-mail de cobrança ainda.</td></tr>}
+            </tbody>
+          </table></div>
         </div>
       )}
     </Dialogo>
