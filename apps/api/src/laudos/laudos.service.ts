@@ -6,6 +6,7 @@ import { DbService } from '../db/db.service';
 import { Acesso, contextoDb, exigir, perfilEm } from '../common/acesso';
 import { auditar } from '../common/auditoria';
 import { ClientesService } from '../cadastros/clientes';
+import { cancelarTituloDoLaudo, criarTituloDoLaudo, sincronizarTituloDoLaudo } from '../receber/titulo';
 
 type Lancamento = z.output<typeof laudoSchema>;
 type Edicao = z.output<typeof editarLaudoSchema>;
@@ -138,6 +139,7 @@ export class LaudosService {
       throw e;
     }
     await this.gravarCustos(c, a, empresaId, id, d.servicoId, preco.valorCobrado);
+    await criarTituloDoLaudo(c, id);
     const laudo = await this.ler(c, a, id);
     await auditar(c, a, { acao: 'laudo.lancado', entidade: 'laudo', entidadeId: id, empresaId, depois: { numero: laudo.numero, placa: laudo.placa, cliente: laudo.cliente, servico: laudo.servico, valorCobradoCentavos: laudo.valorCobradoCentavos, precoManual: laudo.precoManual }, motivo: preco.precisaMotivo ? d.ajusteMotivo : duplMotivo ?? undefined });
     return this.dto(a, laudo);
@@ -264,6 +266,7 @@ export class LaudosService {
         throw e;
       }
       if (mudaPreco || novo.servicoId !== atual.servicoId) await this.gravarCustos(c, a, empresaId, id, novo.servicoId, preco.valorCobrado);
+      await sincronizarTituloDoLaudo(c, id);
       const depois = await this.ler(c, a, id);
       const campos = ['placa', 'chassi', 'numeroLaudo', 'dataLaudo', 'cliente', 'servico', 'vistoriador', 'forma', 'valorCobradoCentavos', 'precoTabelaCentavos', 'precoManual', 'observacao'];
       const pick = (o: Record<string, unknown>) => Object.fromEntries(campos.map((k) => [k, o[k]]));
@@ -293,6 +296,7 @@ export class LaudosService {
       if (l.travado) throw new ConflictException('Este laudo já está em uma fatura ou recebeu baixa. Cancele a fatura ou estorne a baixa antes.');
       if (l.cancelamentoPedidoPorId === a.usuarioId) throw new ForbiddenException('Quem pediu o cancelamento não pode autorizá-lo. Peça a outro gerente ou ao Administrativo.');
       await c.query(`UPDATE laudo SET status = 'CANCELADO', cancelado_por = $2, cancelado_em = now(), motivo_cancelamento = $3 WHERE id = $1`, [id, a.usuarioId, motivo]);
+      await cancelarTituloDoLaudo(c, id, `Laudo cancelado: ${motivo}`);
       await auditar(c, a, { acao: 'laudo.cancelado', entidade: 'laudo', entidadeId: id, empresaId: l.empresaId, motivo, antes: { status: 'ATIVO' }, depois: { status: 'CANCELADO', pedidoDe: l.cancelamentoPedidoPor ?? null } });
       return this.dto(a, await this.ler(c, a, id));
     });

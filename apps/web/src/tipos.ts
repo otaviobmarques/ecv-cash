@@ -67,3 +67,16 @@ export interface LinhaExtrato {
 export interface Extrato { conta: { id: string; nome: string; empresaId: string }; de: string; ate: string; aberturaCentavos: number; entradasCentavos: number; saidasCentavos: number; fechoCentavos: number; itens: LinhaExtrato[] }
 export interface FechamentoDia { id: string; contaId: string; conta: string; data: string; saldoSistemaCentavos: number; saldoContadoCentavos: number; diferencaCentavos: number; observacao: string | null; status: 'FECHADO' | 'REABERTO'; fechadoPor: string | null; motivoReabertura: string | null }
 export interface FechamentoMes { id: string; mes: string; status: 'FECHADO' | 'REABERTO'; fechadoPor: string | null; motivoReabertura: string | null }
+
+export interface TituloItem {
+  id: string; laudoId: string; numero: number; placa: string; dataLaudo: string; clienteId: string; cliente: string; servico: string; forma: string;
+  valorCentavos: number; pagoCentavos: number; saldoCentavos: number; vencimento: string; status: 'ABERTO' | 'PARCIAL' | 'QUITADO' | 'CANCELADO'; faturaId: string | null;
+  vencido: boolean; diasAtraso: number; encargosCentavos: number;
+}
+export interface BaixaItem {
+  id: string; data: string; principalCentavos: number; multaCentavos: number; jurosCentavos: number; perdaoCentavos: number; recebidoCentavos: number; forma: string; conta: string | null;
+  estornoDe: string | null; motivo: string | null; criadoPor: string | null; estornada: boolean;
+}
+export interface TituloDetalhe extends TituloItem { baixas: BaixaItem[]; numeroNf: string | null; motivoCancelamento: string | null }
+export interface SimulacaoBaixa { principalCentavos: number; saldoCentavos: number; data: string; diasAtraso: number; multaCentavos: number; jurosCentavos: number; totalCentavos: number }
+export interface ConfigFinanceira { perdaoLimiteCentavos: number; aprovacaoPagarObrigatoria: boolean; financeiroAprovaPagar: boolean; financeiroVeDre: boolean }

@@ -12,3 +12,4 @@ export * from './schemas-cadastros';
 export * from './laudos';
 export * from './schemas-laudos';
 export * from './schemas-caixa';
+export * from './schemas-receber';
