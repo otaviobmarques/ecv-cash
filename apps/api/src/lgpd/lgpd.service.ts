@@ -38,4 +38,35 @@ export class LgpdService {
       return { ok: true };
     });
   }
+
+  /**
+   * Pessoas físicas sem movimento há pelo menos `anos` anos (último laudo, ou o cadastro, se nunca houve laudo) e sem nada em aberto.
+   * A guarda legal dos lançamentos é de 5 anos: o mínimo aqui também é 5.
+   */
+  async retencao(a: Acesso, anos: number) {
+    this.soAdministrativo(a);
+    return this.db.tenant(contextoDb(a), async (c) => {
+      const itens = (await c.query(
+        `SELECT cl.id, cl.nome, cl.documento, coalesce(u.ultimo, cl.criado_em::date)::text AS "ultimoMovimento", (u.ultimo IS NULL) AS "nuncaTeveLaudo"
+           FROM cliente cl LEFT JOIN LATERAL (SELECT max(l.data_laudo) AS ultimo FROM laudo l WHERE l.cliente_id = cl.id) u ON true
+          WHERE cl.tipo_pessoa = 'PF' AND cl.anonimizado_em IS NULL AND coalesce(u.ultimo, cl.criado_em::date) < (current_date - make_interval(years => $1))
+            AND NOT EXISTS (SELECT 1 FROM titulo_receber t WHERE t.cliente_id = cl.id AND t.status IN ('ABERTO','PARCIAL'))
+            AND NOT EXISTS (SELECT 1 FROM fatura f WHERE f.cliente_id = cl.id AND f.status IN ('ABERTA','PARCIAL'))
+          ORDER BY 4, cl.nome LIMIT 500`, [anos])).rows;
+      return { anos, itens: itens.map((i) => ({ ...i, documento: i.documento ? `•••.${i.documento.slice(3, 6)}.•••-${i.documento.slice(-2)}` : null })) };
+    });
+  }
+
+  /** Anonimiza vários de uma vez, cada um na sua transação; só entra quem ainda cumpre o prazo (a conferência é feita de novo na hora). */
+  async anonimizarLote(a: Acesso, ids: string[], anos: number) {
+    this.soAdministrativo(a);
+    const elegiveis = new Set((await this.retencao(a, anos)).itens.map((i: { id: string }) => i.id));
+    const resultados: { id: string; ok: boolean; erro?: string }[] = [];
+    for (const id of ids) {
+      if (!elegiveis.has(id)) { resultados.push({ id, ok: false, erro: `Não cumpre o prazo de ${anos} anos sem movimento, ou tem valor em aberto.` }); continue; }
+      try { await this.anonimizar(a, id, `Prazo de retenção de ${anos} anos vencido`); resultados.push({ id, ok: true }); }
+      catch (e) { resultados.push({ id, ok: false, erro: (e as Error).message }); }
+    }
+    return { anonimizados: resultados.filter((r) => r.ok).length, erros: resultados.filter((r) => !r.ok).length, resultados };
+  }
 }

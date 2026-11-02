@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } f
 import { ENV, type Env } from '../config/env';
 import { hojeSP } from '../caixa/razao';
 import { CobrancaService } from './cobranca.service';
+import { DbService } from '../db/db.service';
 
 /**
  * Roda a régua de cobrança uma vez por dia, na hora configurada (horário de Brasília). Ligue (AGENDADOR=true) em um único processo da API.
@@ -12,7 +13,7 @@ export class AgendadorCobranca implements OnApplicationBootstrap, OnModuleDestro
   private readonly log = new Logger('Agendador');
   private timer?: NodeJS.Timeout;
   private ultimoDia = '';
-  constructor(private readonly cobranca: CobrancaService, @Inject(ENV) private readonly env: Env) {}
+  constructor(private readonly cobranca: CobrancaService, private readonly db: DbService, @Inject(ENV) private readonly env: Env) {}
 
   onApplicationBootstrap() {
     if (this.env.AGENDADOR !== 'true') return;
@@ -27,7 +28,14 @@ export class AgendadorCobranca implements OnApplicationBootstrap, OnModuleDestro
     const hoje = hojeSP();
     if (hora < this.env.HORA_COBRANCA || this.ultimoDia === hoje) return;
     this.ultimoDia = hoje;
+    await this.limpar();
     try { const r = await this.cobranca.processarTodas(hoje); this.log.log(`Régua rodou: ${r.enviados} e-mails em ${r.grupos} grupos.`); }
     catch (e) { this.ultimoDia = ''; this.log.error(`Régua falhou: ${(e as Error).message}`); }
+  }
+
+  /** Dado técnico que não precisa ficar: tentativas de login com mais de 90 dias. (O log de auditoria, por lei e por desenho, não se apaga.) */
+  private async limpar() {
+    try { const r = await this.db.semTenant((c) => c.query(`DELETE FROM login_tentativa WHERE criado_em < now() - interval '90 days'`)); if (r.rowCount) this.log.log(`${r.rowCount} tentativas de login antigas removidas.`); }
+    catch (e) { this.log.warn(`Limpeza de tentativas de login falhou: ${(e as Error).message}`); }
   }
 }

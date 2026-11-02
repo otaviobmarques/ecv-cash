@@ -8,6 +8,7 @@ import { PlanoContas } from './cad/PlanoContas';
 import { Aliquotas } from './cad/Aliquotas';
 import { Vinculos } from './cad/Vinculos';
 import { Importar } from './cad/Importar';
+import { Retencao } from './cad/Retencao';
 
 const ABAS = [
   { id: 'servicos', rotulo: 'Serviços', perm: 'servico.ver' },
@@ -18,6 +19,7 @@ const ABAS = [
   { id: 'impostos', rotulo: 'Impostos', perm: 'aliquota.ver' },
   { id: 'grupo', rotulo: 'Empresas do grupo', perm: 'empresa.criar' },
   { id: 'importar', rotulo: 'Importar planilha', perm: 'cliente.editar' },
+  { id: 'retencao', rotulo: 'Privacidade (LGPD)', perm: 'empresa.criar' },
 ] as const;
 
 export function Cadastros() {
@@ -42,6 +44,7 @@ export function Cadastros() {
       {atual === 'impostos' && <Aliquotas />}
       {atual === 'grupo' && <Vinculos />}
       {atual === 'importar' && <Importar />}
+      {atual === 'retencao' && <Retencao />}
     </div>
   );
 }
