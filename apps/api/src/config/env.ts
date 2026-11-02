@@ -23,7 +23,8 @@ const schema = z.object({
   AGENDADOR: z.enum(['true', 'false']).default('false'),
   HORA_COBRANCA: z.coerce.number().int().min(0).max(23).default(8),
   /** Conta PIX da ECV Cash para receber as mensalidades (aparece em "Minha assinatura"). Sem chave, só o valor e o vencimento aparecem. */
-  ECV_PIX_TIPO: z.enum(['CNPJ', 'CPF', 'EMAIL', 'TELEFONE', 'ALEATORIA']).optional(),
+  // o docker-compose manda "" quando a variável não está no .env: vazio vale como ausente
+  ECV_PIX_TIPO: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['CNPJ', 'CPF', 'EMAIL', 'TELEFONE', 'ALEATORIA']).optional()),
   ECV_PIX_CHAVE: z.string().optional(),
   ECV_PIX_NOME: z.string().default('ECV CASH'),
   ECV_PIX_CIDADE: z.string().default('SAO PAULO'),
