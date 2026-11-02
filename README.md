@@ -1,7 +1,7 @@
 # ECV Cash
 
 Sistema financeiro SaaS multiempresa para ECVs (Empresas Credenciadas de Vistoria): laudos, contas a receber e a pagar,
-faturados, caixa, relatórios e visão contábil/gerencial. Sistema desenvolvido pela Domma Tecnologia; design pela agência REDBOX.
+faturados, caixa, relatórios e visão contábil/gerencial. Sistema desenvolvido pela Domma Tecnologia.
 
 > Estado: **Fase 1 (MVP) e Fase 2 prontas**: laudos, caixa, contas a receber, faturados (PDF e QR PIX), contas a pagar, cartão e cheque, comissões, royalties, alíquotas, relatórios, DRE, fluxo de caixa e cobrança por e-mail. A Fase 3 também está pronta: consolidado da rede, balanço gerencial, importação por planilha, aprovação em níveis e LGPD avançada. Falta só o logotipo da empresa nos PDFs (depende do armazenamento S3).
 > Roadmap em [`docs/04-roadmap.md`](docs/04-roadmap.md).

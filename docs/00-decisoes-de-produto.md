@@ -30,7 +30,7 @@ Registro do que foi combinado com o cliente. Onde diz "default", foi sugestão a
 - LGPD: acesso e exportação auditados, retenção definida, anonimização por solicitação.
 - **Backoffice** (sistema separado, 2FA obrigatório) no MVP, versão simples: criar e suspender grupos e empresas, primeiro Administrativo, log, "entrar como" com motivo, prazo de 30 min e registro no log do cliente.
 - **Aparência por cliente:** logo e cor principal por grupo ou empresa (herança), contraste validado (mínimo 3:1 com o fundo; texto troca para escuro abaixo de 4,5:1 com branco). Cores de erro, aviso, sucesso e gráficos não mudam.
-- Créditos discretos no rodapé do sistema e do backoffice: "Sistema desenvolvido por Domma Tecnologia" e "Design por REDBOX" (com os logotipos). Não aparecem em PDFs e relatórios.
+- Créditos discretos no rodapé do sistema e do backoffice: "Sistema desenvolvido pela Domma Tecnologia" (com o logotipo; a menção à REDBOX foi retirada). Não aparecem em PDFs e relatórios.
 
 ## Perfis
 Administrativo (rede), Gerente (própria loja), Financeiro, Vistoriador. Matriz completa em `03-permissoes.md`.
