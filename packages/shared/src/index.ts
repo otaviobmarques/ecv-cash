@@ -16,3 +16,4 @@ export * from './schemas-receber';
 export * from './pix';
 export * from './faturas';
 export * from './schemas-faturas';
+export * from './schemas-pagar';

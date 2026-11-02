@@ -71,6 +71,7 @@ export const MATRIZ = {
   'juros.perdoar_ate_limite': [F],
   'cheque.controlar': [A, G, F],
   // Contas a pagar
+  'pagar.ver': [A, G, F],
   'pagar.criar': [A, G, F],
   'pagar.aprovar': [A, G],
   'pagar.pagar': [A, G, F],

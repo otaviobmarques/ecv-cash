@@ -91,3 +91,14 @@ export interface FaturaDetalhe extends FaturaItem {
 }
 export interface PixFatura { disponivel: boolean; valorCentavos: number; copiaECola?: string; qrCode?: string; conta?: string; titular?: string | null }
 export interface PreviaCliente { clienteId: string; cliente: string; periodicidade: 'SEMANAL' | 'QUINZENAL' | 'MENSAL'; prazoDias: number; titulos: number; totalCentavos: number; primeiroLaudo: string; ultimoLaudo: string }
+
+export type StatusPagar = 'RASCUNHO' | 'PENDENTE' | 'APROVADO' | 'PARCIAL' | 'PAGO' | 'CANCELADO';
+export interface TituloPagar {
+  id: string; empresaId: string; fornecedorId: string | null; favorecido: string; descricao: string; planoContaId: string | null; planoConta: string | null; competencia: string; vencimento: string;
+  valorCentavos: number; pagoCentavos: number; saldoCentavos: number; status: StatusPagar; origem: string; numeroDocumento: string | null; observacao: string | null; anexoId: string | null;
+  motivoRejeicao: string | null; criadoPorId: string | null; criadoPor: string | null; aprovadoPor: string | null; vencido: boolean; recorrenciaId: string | null; rateioId: string | null;
+}
+export interface PagamentoPagar { id: string; data: string; principalCentavos: number; jurosCentavos: number; multaCentavos: number; descontoCentavos: number; pagoTotalCentavos: number; conta: string; comprovanteId: string | null; estornoDe: string | null; motivo: string | null; estornado: boolean }
+export interface TituloPagarDetalhe extends TituloPagar { pagamentos: PagamentoPagar[]; anexo: { id: string; nome: string; mime: string } | null; motivoCancelamento: string | null; custos: { laudos: number; de: string; ate: string } | null }
+export interface Recorrencia { id: string; descricao: string; fornecedor: string | null; valorCentavos: number; frequencia: 'SEMANAL' | 'QUINZENAL' | 'MENSAL' | 'ANUAL'; dia: number; inicio: string; fim: string | null; geradaAte: string | null; ativa: boolean }
+export interface CustoAApurar { fornecedorId: string; fornecedor: string; custos: number; laudos: number; totalCentavos: number }
