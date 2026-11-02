@@ -6,6 +6,7 @@ import { Login } from './paginas/Login';
 import { Grupos } from './paginas/Grupos';
 import { GrupoPagina } from './paginas/Grupo';
 import redbox from './redbox.png';
+import domma from './domma.png';
 
 function Moldura() {
   const { data: eu } = useInterno();
@@ -25,8 +26,9 @@ function Moldura() {
         </div>
       </header>
       <main className="conteudo"><Outlet /></main>
-      <footer style={{ padding: '0 24px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <span className="peq mut">Desenvolvido por</span><img src={redbox} alt="REDBOX" style={{ width: 96 }} />
+      <footer style={{ padding: '0 24px 24px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="peq mut">Sistema desenvolvido por</span><img src={domma} alt="Domma Tecnologia" style={{ width: 92 }} />
+        <span className="peq mut" style={{ marginLeft: 16 }}>Design por</span><img src={redbox} alt="REDBOX" style={{ width: 96 }} />
       </footer>
     </>
   );

@@ -45,7 +45,8 @@ export class PagarService {
     if (!temPermissao(perfil, 'pagar.aprovar')) {
       if (perfil !== 'FINANCEIRO' || !(await this.config(c, empresaId)).financeiroAprova) throw new ForbiddenException('Você não tem permissão para aprovar contas a pagar.');
     }
-    if (criadoPor && criadoPor === a.usuarioId) throw new ForbiddenException('Quem criou a conta não pode aprová-la. Peça a outra pessoa.');
+    // o Administrativo pode tudo, inclusive aprovar o que criou; Gerente e Financeiro nunca aprovam a própria conta
+    if (criadoPor && criadoPor === a.usuarioId && perfil !== 'ADMINISTRATIVO') throw new ForbiddenException('Quem criou a conta não pode aprová-la. Peça a outra pessoa.');
   }
 
   private async validarVinculos(c: PoolClient, empresaId: string, d: { fornecedorId?: string | null; planoContaId?: string | null; anexoId?: string | null }) {

@@ -1,6 +1,6 @@
 # Privacidade e retenção de dados (LGPD)
 
-O sistema trata dados pessoais de clientes pessoa física (nome, CPF, e-mail, telefone), de vistoriadores e de usuários. O controlador dos dados é a empresa que usa o sistema (o grupo); a REDBOX e a equipe do ECV Cash atuam como operadoras.
+O sistema trata dados pessoais de clientes pessoa física (nome, CPF, e-mail, telefone), de vistoriadores e de usuários. O controlador dos dados é a empresa que usa o sistema (o grupo); a Domma Tecnologia (desenvolvimento e operação do sistema) atua como operadora.
 
 ## O que cada dado é, e por quanto tempo fica
 | Dado | Onde | Prazo | Como sai |

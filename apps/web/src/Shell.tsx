@@ -7,6 +7,7 @@ import { api } from './api';
 import { useSessao } from './sessao';
 import type { Empresa, Eu, TemaEfetivo } from './tipos';
 import redbox from './redbox.png';
+import domma from './domma.png';
 
 const MENU: { para: string; rotulo: string; icone: NomeIcone; perm?: Permissao; fim?: boolean; naoPara?: Perfil[] }[] = [
   { para: '/', rotulo: 'Início', icone: 'painel', fim: true },
@@ -71,7 +72,9 @@ export function Shell({ eu }: { eu: Eu }) {
             ))}
           </nav>
           <div className="rodape-nav">
-            <span className="peq mut">Desenvolvido por</span>
+            <span className="peq mut">Sistema desenvolvido por</span>
+            <img src={domma} alt="Domma Tecnologia" style={{ width: 104 }} />
+            <span className="peq mut">Design por</span>
             <img src={redbox} alt="REDBOX" />
           </div>
         </aside>

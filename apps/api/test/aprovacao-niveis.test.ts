@@ -55,13 +55,27 @@ describe('aprovação de contas a pagar em níveis', () => {
     expect((await det(t2.id)).aprovacoes.map((x) => x.perfil)).toEqual(['GERENTE', 'ADMINISTRATIVO']);
   });
 
-  it('duas aprovações sem o Administrativo não bastam (conta criada por ele fica esperando outro Administrativo)', async () => {
+  it('o Administrativo aprova a própria conta; Gerente e Financeiro, nunca a que criaram', async () => {
+    const t = await criar(adm, 50000);
+    expect((await adm.post(`/pagar/titulos/${t.id}/aprovar`)).body.status).toBe('APROVADO');
+    const g = await criar(ger, 50000);
+    expect((await ger.post(`/pagar/titulos/${g.id}/aprovar`)).status).toBe(403);
+    expect((await adm.post(`/pagar/titulos/${g.id}/aprovar`)).body.status).toBe('APROVADO');
+  });
+
+  it('na dupla aprovação o Administrativo conta uma vez, mesmo sendo quem criou: ainda falta outra pessoa', async () => {
+    const t = await criar(adm, 600000);
+    expect((await adm.post(`/pagar/titulos/${t.id}/aprovar`)).body).toMatchObject({ status: 'PENDENTE', aprovacoesDadas: 1, aprovacoesNecessarias: 2 });
+    expect((await adm.post(`/pagar/titulos/${t.id}/aprovar`)).status).toBe(409); // a mesma pessoa não conta duas vezes
+    expect((await ger.post(`/pagar/titulos/${t.id}/aprovar`)).body.status).toBe('APROVADO');
+  });
+
+  it('duas aprovações sem o Administrativo não bastam', async () => {
     expect((await adm.put('/receber/config', { financeiroAprovaPagar: true })).status).toBe(200);
-    const t = await criar(adm, 600000); // o criador não aprova a própria conta
-    await ger.post(`/pagar/titulos/${t.id}/aprovar`); await fin.post(`/pagar/titulos/${t.id}/aprovar`);
+    const t = await criar(ger, 600000);
+    await fin.post(`/pagar/titulos/${t.id}/aprovar`);
     expect(await det(t.id)).toMatchObject({ status: 'PENDENTE' });
-    expect((await det(t.id)).aprovacoes).toHaveLength(2);
-    expect((await adm.post(`/pagar/titulos/${t.id}/aprovar`)).status).toBe(403); // quem criou
+    expect((await adm.post(`/pagar/titulos/${t.id}/aprovar`)).body.status).toBe('APROVADO');
     expect((await adm.put('/receber/config', { financeiroAprovaPagar: false })).status).toBe(200);
   });
 

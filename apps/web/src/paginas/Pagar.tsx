@@ -150,7 +150,7 @@ function Detalhe({ id, eu, onFechar, onMudou }: { id: string | null; eu: Eu; onF
   const estornar = useMutation({ mutationFn: (pid: string) => api.post(`/pagar/pagamentos/${pid}/estornar`, { motivo: f.motivo }), onSuccess: fim('Pagamento estornado.'), onError: falha });
   const abrirAnexo = (aid: string) => window.open(`${API_BASE}/pagar/anexos/${aid}`, '_blank', 'noopener');
   const aberta = t && (t.status === 'APROVADO' || t.status === 'PARCIAL');
-  const euCriei = t?.criadoPorId === eu.id;
+  const euCriei = t?.criadoPorId === eu.id && !eu.rede; // o Administrativo aprova até o que ele mesmo criou
   return (
     <Dialogo aberto={!!id} onFechar={fechar} titulo={t ? t.descricao : 'Conta a pagar'} lateral>
       {!t ? <Carregando /> : (
