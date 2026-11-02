@@ -18,3 +18,4 @@ export * from './faturas';
 export * from './schemas-faturas';
 export * from './schemas-pagar';
 export * from './csv';
+export * from './schemas-comissoes';

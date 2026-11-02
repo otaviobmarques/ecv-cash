@@ -8,6 +8,7 @@ import { Acesso, contextoDb, exigir, perfilEm } from '../common/acesso';
 import { auditar } from '../common/auditoria';
 import { estornarLancamento, hojeSP, registrarLancamento, saldoDaConta, ultimoDiaFechado } from '../caixa/razao';
 import { datasDaRecorrencia } from './recorrencia';
+import { configPagar, inserirTituloPagar } from './titulo-pagar';
 
 type Titulo = z.output<typeof tituloPagarSchema>;
 type Filtro = z.output<typeof filtroPagarSchema>;
@@ -29,10 +30,7 @@ export class PagarService {
     return a.empresaAtivaId;
   }
 
-  private async config(c: PoolClient, empresaId: string) {
-    const r = (await c.query('SELECT aprovacao_pagar_obrigatoria AS obrig, financeiro_aprova_pagar AS fin FROM empresa_config WHERE empresa_id = $1', [empresaId])).rows[0];
-    return { aprovacaoObrigatoria: r?.obrig ?? true, financeiroAprova: r?.fin ?? false };
-  }
+  private config(c: PoolClient, empresaId: string) { return configPagar(c, empresaId); }
 
   private async lerTitulo(c: PoolClient, id: string, travar = false) {
     const t = (await c.query(`SELECT ${COLS} ${FROM} WHERE t.id = $1 ${travar ? 'FOR UPDATE OF t' : ''}`, [id])).rows[0];
@@ -59,16 +57,7 @@ export class PagarService {
     if (d.anexoId && !(await c.query('SELECT 1 FROM anexo WHERE id = $1 AND empresa_id = $2', [d.anexoId, empresaId])).rows[0]) throw erroCampo('anexoId', 'Anexo não encontrado nesta loja.');
   }
 
-  private async inserir(c: PoolClient, a: Acesso, empresaId: string, d: Titulo & { origem?: string; origemId?: string; recorrenciaId?: string; rateioId?: string; status?: string; criadoPor?: string | null }) {
-    const cfg = await this.config(c, empresaId);
-    const status = d.status ?? (d.rascunho ? 'RASCUNHO' : cfg.aprovacaoObrigatoria ? 'PENDENTE' : 'APROVADO');
-    const r = await c.query(
-      `INSERT INTO titulo_pagar (grupo_id, empresa_id, fornecedor_id, beneficiario, descricao, plano_conta_id, competencia, vencimento, valor_centavos, status, origem, origem_id, recorrencia_id, rateio_id, numero_documento, observacao, anexo_id, criado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`,
-      [a.grupoId, empresaId, d.fornecedorId ?? null, d.beneficiario ?? null, d.descricao, d.planoContaId ?? null, d.competencia ? `${d.competencia}-01` : mesDe(d.vencimento), d.vencimento, d.valorCentavos, status,
-       d.origem ?? 'MANUAL', d.origemId ?? null, d.recorrenciaId ?? null, d.rateioId ?? null, d.numeroDocumento ?? null, d.observacao ?? null, d.anexoId ?? null, d.criadoPor === undefined ? a.usuarioId : d.criadoPor]);
-    return r.rows[0].id as string;
-  }
+  private inserir(c: PoolClient, a: Acesso, empresaId: string, d: Parameters<typeof inserirTituloPagar>[3]) { return inserirTituloPagar(c, a, empresaId, d); }
 
   async criar(a: Acesso, d: Titulo) {
     const empresaId = this.empresaAtiva(a);

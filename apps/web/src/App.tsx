@@ -19,6 +19,7 @@ import { Faturados } from './paginas/Faturados';
 import { Pagar } from './paginas/Pagar';
 import { Relatorios } from './paginas/Relatorios';
 import { CartoesCheques } from './paginas/CartoesCheques';
+import { Comissoes } from './paginas/Comissoes';
 import { Caixa } from './paginas/Caixa';
 import { Cadastros } from './paginas/Cadastros';
 
@@ -40,6 +41,7 @@ export function App() {
         <Route path="pagar" element={<Pagar />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="cartoes" element={<CartoesCheques />} />
+        <Route path="comissoes" element={<Comissoes />} />
         <Route path="caixa" element={<Caixa />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="fornecedores" element={<Fornecedores />} />

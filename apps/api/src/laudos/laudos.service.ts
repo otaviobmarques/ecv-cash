@@ -6,6 +6,7 @@ import { DbService } from '../db/db.service';
 import { Acesso, contextoDb, exigir, perfilEm } from '../common/acesso';
 import { auditar } from '../common/auditoria';
 import { ClientesService } from '../cadastros/clientes';
+import { desativarComissao, exigirComissaoAberta, gravarComissao } from '../comissoes/comissao';
 import { cancelarTituloDoLaudo, criarTituloDoLaudo, sincronizarTituloDoLaudo } from '../receber/titulo';
 
 type Lancamento = z.output<typeof laudoSchema>;
@@ -140,6 +141,7 @@ export class LaudosService {
     }
     await this.gravarCustos(c, a, empresaId, id, d.servicoId, preco.valorCobrado);
     await criarTituloDoLaudo(c, id);
+    await gravarComissao(c, a.grupoId, id);
     const laudo = await this.ler(c, a, id);
     await auditar(c, a, { acao: 'laudo.lancado', entidade: 'laudo', entidadeId: id, empresaId, depois: { numero: laudo.numero, placa: laudo.placa, cliente: laudo.cliente, servico: laudo.servico, valorCobradoCentavos: laudo.valorCobradoCentavos, precoManual: laudo.precoManual }, motivo: preco.precisaMotivo ? d.ajusteMotivo : duplMotivo ?? undefined });
     return this.dto(a, laudo);
@@ -216,6 +218,7 @@ export class LaudosService {
       await c.query('SELECT 1 FROM laudo WHERE id = $1 FOR UPDATE', [id]);
       const empresaId: string = atual.empresaId;
       const perfil = perfilEm(a, empresaId)!;
+      await exigirComissaoAberta(c, id);
       if (atual.status !== 'ATIVO') throw new ConflictException('Laudo cancelado não pode ser editado.');
       if (atual.travado) throw new ConflictException('Este laudo já está em uma fatura ou recebeu baixa. Cancele a fatura ou estorne a baixa antes de editar.');
       const hoje = hojeSP();
@@ -267,6 +270,7 @@ export class LaudosService {
       }
       if (mudaPreco || novo.servicoId !== atual.servicoId) await this.gravarCustos(c, a, empresaId, id, novo.servicoId, preco.valorCobrado);
       await sincronizarTituloDoLaudo(c, id);
+      if (mudaPreco || d.vistoriadorId || novo.servicoId !== atual.servicoId) await gravarComissao(c, a.grupoId, id);
       const depois = await this.ler(c, a, id);
       const campos = ['placa', 'chassi', 'numeroLaudo', 'dataLaudo', 'cliente', 'servico', 'vistoriador', 'forma', 'valorCobradoCentavos', 'precoTabelaCentavos', 'precoManual', 'observacao'];
       const pick = (o: Record<string, unknown>) => Object.fromEntries(campos.map((k) => [k, o[k]]));
@@ -296,7 +300,9 @@ export class LaudosService {
       if (l.travado) throw new ConflictException('Este laudo já está em uma fatura ou recebeu baixa. Cancele a fatura ou estorne a baixa antes.');
       if (l.cancelamentoPedidoPorId === a.usuarioId) throw new ForbiddenException('Quem pediu o cancelamento não pode autorizá-lo. Peça a outro gerente ou ao Administrativo.');
       await c.query(`UPDATE laudo SET status = 'CANCELADO', cancelado_por = $2, cancelado_em = now(), motivo_cancelamento = $3 WHERE id = $1`, [id, a.usuarioId, motivo]);
+      await exigirComissaoAberta(c, id);
       await cancelarTituloDoLaudo(c, id, `Laudo cancelado: ${motivo}`);
+      await desativarComissao(c, id);
       await auditar(c, a, { acao: 'laudo.cancelado', entidade: 'laudo', entidadeId: id, empresaId: l.empresaId, motivo, antes: { status: 'ATIVO' }, depois: { status: 'CANCELADO', pedidoDe: l.cancelamentoPedidoPor ?? null } });
       return this.dto(a, await this.ler(c, a, id));
     });
