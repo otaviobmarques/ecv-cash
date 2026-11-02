@@ -1,0 +1,257 @@
+<title>Instalar ECV Cash na VPS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Public+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: guia de uma coluna com índice lateral fixo no desktop; cada passo é um bloco numerado de verdade (a ordem importa). */
+:root {
+  --bg: #f6f8f5; --surface: #ffffff; --fg: #17261f; --muted: #55665d; --line: #d9e1db;
+  --verde: #0f4d3a; --verde-suave: #e3efe8; --brand: #1f7a58; --on-brand: #ffffff;
+  --code-bg: #12201a; --code-fg: #dcebe2; --warn-bg: #fff3d6; --warn-fg: #5c4300; --warn-line: #e6c36a;
+  --ok-bg: #e3f3ea; --ok-fg: #0d4a2c; --err-bg: #fde7e4; --err-fg: #6b1a12;
+  --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1713; --surface: #15221c; --fg: #e4efe8; --muted: #9fb2a7; --line: #26382f;
+  --verde: #8fd3b1; --verde-suave: #1b2e25; --brand: #3fae80; --on-brand: #06150f;
+  --code-bg: #0a120e; --code-fg: #d3e6da; --warn-bg: #3a2f10; --warn-fg: #f1d98f; --warn-line: #6b5518;
+  --ok-bg: #12301f; --ok-fg: #a8e3c1; --err-bg: #3b1a16; --err-fg: #f3b8af; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1713; --surface: #15221c; --fg: #e4efe8; --muted: #9fb2a7; --line: #26382f;
+  --verde: #8fd3b1; --verde-suave: #1b2e25; --brand: #3fae80; --on-brand: #06150f;
+  --code-bg: #0a120e; --code-fg: #d3e6da; --warn-bg: #3a2f10; --warn-fg: #f1d98f; --warn-line: #6b5518;
+  --ok-bg: #12301f; --ok-fg: #a8e3c1; --err-bg: #3b1a16; --err-fg: #f3b8af; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 400 16px/1.6 var(--sans); padding-block: 24px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; }
+nav.toc { position: sticky; top: 24px; align-self: start; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+nav.toc b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+nav.toc a { color: var(--fg); text-decoration: none; padding: 6px 10px; border-radius: 8px; border-left: 3px solid transparent; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--verde-suave); outline: none; }
+nav.toc a[aria-current="true"] { background: var(--verde-suave); border-left-color: var(--brand); font-weight: 600; }
+main { min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: clamp(28px, 4vw, 38px); line-height: 1.15; margin: 0; color: var(--verde); text-wrap: balance; }
+h2 { font-size: 22px; margin: 0 0 8px; color: var(--verde); display: flex; gap: 12px; align-items: baseline; text-wrap: balance; }
+h2 .n { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: var(--on-brand); font-size: 15px; display: inline-grid; place-items: center; transform: translateY(-2px); }
+p { margin: 0 0 12px; max-width: 68ch; }
+.lead { color: var(--muted); font-size: 17px; max-width: 62ch; }
+section { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; min-width: 0; scroll-margin-top: 16px; }
+code { font-family: var(--mono); font-size: .88em; background: var(--verde-suave); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+.cb { position: relative; margin: 12px 0 16px; }
+.cb pre { margin: 0; background: var(--code-bg); color: var(--code-fg); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 400 13.5px/1.6 var(--mono); }
+.cb pre code { background: none; padding: 0; font: inherit; overflow-wrap: normal; }
+.cb button { position: absolute; top: 8px; right: 8px; font: 600 12px var(--sans); background: var(--brand); color: var(--on-brand); border: 0; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+.cb button:focus-visible, .cfg input:focus-visible, nav.toc a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.nota { border-radius: 10px; padding: 12px 14px; margin: 12px 0; font-size: 15px; display: flex; gap: 10px; }
+.nota > span:first-child { flex: none; font-weight: 700; }
+.nota.aviso { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-line); }
+.nota.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.nota.erro { background: var(--err-bg); color: var(--err-fg); }
+.nota p { margin: 0; }
+.cfg { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 14px; }
+.cfg label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 0; }
+.cfg input { font: 400 15px var(--mono); padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--fg); min-width: 0; }
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+ul { margin: 0 0 12px; padding-left: 22px; max-width: 68ch; } li { margin-bottom: 6px; }
+details { border-top: 1px solid var(--line); padding: 12px 0; } details:last-of-type { border-bottom: 1px solid var(--line); }
+summary { cursor: pointer; font-weight: 600; } details[open] summary { margin-bottom: 8px; }
+details p { margin: 0; color: var(--muted); }
+.mermaid { background: var(--surface); margin: 16px 0 4px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); } nav.toc { display: none; } section { padding: 18px; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Passos">
+  <b>Passos</b>
+  <a href="#antes">0 · Antes de começar</a>
+  <a href="#dns">1 · DNS</a>
+  <a href="#codigo">2 · Baixar o código</a>
+  <a href="#env">3 · Gerar o .env</a>
+  <a href="#subir">4 · Subir</a>
+  <a href="#interno">5 · Primeiro usuário</a>
+  <a href="#openclaw">6 · Conferir o OpenClaw</a>
+  <a href="#rotina">Rotina</a>
+  <a href="#problemas">Problemas</a>
+</nav>
+
+<main>
+<header>
+  <h1>Instalar o ECV Cash numa VPS com Traefik</h1>
+  <p class="lead">O Traefik do OpenClaw já ocupa as portas 80 e 443 e emite os certificados. O ECV Cash entra ao lado, como um projeto Docker separado, sem alterar nada do que já existe.</p>
+  <pre class="mermaid">flowchart LR
+  I[Internet] --> T["Traefik<br/>80 / 443 · HTTPS"]
+  T --> C["Caddy do ECV Cash<br/>HTTP interno"]
+  C --> W["Telas<br/>app e admin"]
+  C --> A["/api"]
+  A --> P["API"] --> D[("PostgreSQL")]</pre>
+  <div class="cfg" aria-label="Seus dados">
+    <label>Seu domínio<input id="f-dominio" value="" placeholder="meudominio.com.br" autocomplete="off" spellcheck="false"></label>
+    <label>Rede do Traefik<input id="f-rede" value="" placeholder="openclaw_default" autocomplete="off" spellcheck="false"></label>
+    <label>Certresolver<input id="f-cert" value="" placeholder="letsencrypt" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <p class="lead" style="margin-top:10px;font-size:14px">Preencha os três campos e os comandos abaixo já saem com os seus valores. Nada é enviado para fora desta página.</p>
+</header>
+
+<section id="antes">
+  <h2><span class="n">0</span>Antes de começar</h2>
+  <p>Entre na VPS e descubra os dados do Traefik. Todos estes comandos só leem informação.</p>
+  <div class="cb"><pre><code>ssh root@IP_DA_VPS
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
+docker network ls</code></pre></div>
+  <p>Anote o nome do contêiner do Traefik e do OpenClaw. Troque <code>traefik</code> abaixo pelo nome que apareceu:</p>
+  <div class="cb"><pre><code>docker inspect traefik --format '{{range $n,$_ := .NetworkSettings.Networks}}rede: {{$n}}{{"\n"}}{{end}}'
+docker inspect traefik --format '{{range .Args}}{{println .}}{{end}}' | grep -E "certificatesresolvers|entrypoints"</code></pre></div>
+  <div class="tw"><table>
+    <tr><th>Na saída procure</th><th>Vira</th></tr>
+    <tr><td>a rede do Traefik (ex.: <code>openclaw_default</code>)</td><td><code>REDE_TRAEFIK</code></td></tr>
+    <tr><td><code>--certificatesresolvers.NOME.acme…</code></td><td><code>TRAEFIK_CERTRESOLVER</code> = NOME (comum: <code>letsencrypt</code>)</td></tr>
+    <tr><td><code>--entrypoints.NOME.address=:443</code> e <code>:80</code></td><td>normalmente <code>websecure</code> e <code>web</code> (já são o padrão)</td></tr>
+  </table></div>
+  <div class="nota aviso"><span>!</span><p>Se o Traefik foi configurado por arquivo (<code>traefik.yml</code>) e não por argumentos, ache o arquivo com <code>docker inspect traefik | grep -i -A3 mounts</code> e leia o nome do certresolver nele.</p></div>
+  <p>Veja se há memória livre (o banco e a API pedem cerca de 1 GB) e guarde o estado atual do OpenClaw para comparar no fim:</p>
+  <div class="cb"><pre><code>free -h
+docker ps --format '{{.Names}}\t{{.Status}}' | sort > /root/estado-antes.txt
+cat /root/estado-antes.txt</code></pre></div>
+  <p>Abra também o endereço do OpenClaw no navegador e confirme que está funcionando.</p>
+</section>
+
+<section id="dns">
+  <h2><span class="n">1</span>Apontar o DNS</h2>
+  <p>No painel do domínio (registro.br ou Hostinger), crie dois registros <b>A</b> com o IP da VPS:</p>
+  <div class="tw"><table>
+    <tr><th>Nome</th><th>Tipo</th><th>Valor</th></tr>
+    <tr><td><code>app</code></td><td>A</td><td>IP da VPS</td></tr>
+    <tr><td><code>admin</code></td><td>A</td><td>IP da VPS</td></tr>
+  </table></div>
+  <p style="margin-top:12px">Confira (pode levar de minutos a horas): o resultado deve ser o IP da VPS.</p>
+  <div class="cb"><pre><code>dig +short app.SEUDOMINIO
+dig +short admin.SEUDOMINIO</code></pre></div>
+  <div class="nota aviso"><span>!</span><p>Se o seu domínio já serve o OpenClaw, use um subdomínio separado: com <code>ecv.seudominio.com.br</code> como domínio, os registros ficam <code>app.ecv</code> e <code>admin.ecv</code>.</p></div>
+</section>
+
+<section id="codigo">
+  <h2><span class="n">2</span>Baixar o código</h2>
+  <p>O repositório é privado, então a VPS precisa de uma chave só de leitura.</p>
+  <div class="cb"><pre><code>apt-get update && apt-get install -y git
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/ecv_deploy -C "vps-ecv-cash"
+cat ~/.ssh/ecv_deploy.pub</code></pre></div>
+  <p>No GitHub: repositório <code>ecv-cash</code> › Settings › Deploy keys › Add deploy key. Cole a chave pública e <b>não</b> marque “Allow write access”. Depois:</p>
+  <div class="cb"><pre><code>printf 'Host github.com\n  IdentityFile ~/.ssh/ecv_deploy\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+git clone git@github.com:otaviobmarques/ecv-cash.git /opt/ecv-cash</code></pre></div>
+</section>
+
+<section id="env">
+  <h2><span class="n">3</span>Gerar o .env</h2>
+  <div class="cb"><pre><code>cd /opt/ecv-cash/deploy
+./gerar-env.sh SEUDOMINIO REDE_TRAEFIK CERTRESOLVER</code></pre></div>
+  <p>O script confere se a rede existe e cria o <code>.env</code> com senhas novas, legível só pelo root. Se os entrypoints do seu Traefik forem outros, acrescente no fim os nomes do HTTPS e do HTTP, nessa ordem.</p>
+  <div class="nota aviso"><span>!</span><p>Guarde uma cópia do <code>deploy/.env</code> num gerenciador de senhas. Ele tem as senhas do banco e a chave que cifra o 2FA. Sem ele não há como recuperar o sistema.</p></div>
+</section>
+
+<section id="subir">
+  <h2><span class="n">4</span>Subir</h2>
+  <div class="cb"><pre><code>docker compose up -d --build
+docker compose ps</code></pre></div>
+  <p>A primeira vez leva alguns minutos.</p>
+  <div class="nota ok"><span>✓</span><p>Esperado: <code>db</code>, <code>api</code> e <code>site</code> rodando. O <code>migrar</code> aparece como “exited (0)”: ele só aplica as migrações e sai.</p></div>
+  <p>Se o comando reclamar de variável faltando, o <code>.env</code> está incompleto. Compare com <code>.env.exemplo</code>.</p>
+</section>
+
+<section id="interno">
+  <h2><span class="n">5</span>Criar o primeiro usuário interno</h2>
+  <div class="cb"><pre><code>docker compose run --rm criar-interno "Seu Nome" seu@email.com PLATAFORMA</code></pre></div>
+  <p>A senha provisória aparece <b>uma única vez</b>. Anote. Depois:</p>
+  <ul>
+    <li>Abra <code>https://admin.SEUDOMINIO</code>, entre com o e-mail e a senha provisória e configure o aplicativo autenticador (2FA).</li>
+    <li>Crie o primeiro grupo. O link do convite do Administrativo aparece na tela, para você entregar.</li>
+    <li>A pessoa abre o link (<code>https://app.SEUDOMINIO/convite?token=…</code>), define a senha e entra.</li>
+  </ul>
+  <p>O certificado leva até um minuto na primeira visita.</p>
+</section>
+
+<section id="openclaw">
+  <h2><span class="n">6</span>Conferir que o OpenClaw continua funcionando</h2>
+  <div class="cb"><pre><code>docker ps --format '{{.Names}}\t{{.Status}}' | sort > /root/estado-depois.txt
+diff /root/estado-antes.txt /root/estado-depois.txt</code></pre></div>
+  <div class="nota ok"><span>✓</span><p>O <code>diff</code> deve mostrar só linhas novas do ECV Cash (<code>ecv-cash-db-1</code>, <code>ecv-cash-api-1</code>, <code>ecv-cash-site-1</code>) e nenhuma mudança nos contêineres do OpenClaw e do Traefik. Um “Up 3 days” que virou “Up 2 minutes” indica reinício e deve ser investigado.</p></div>
+  <ul>
+    <li>Abra o endereço do OpenClaw e use como de costume.</li>
+    <li><code>docker logs --tail 50 traefik</code> (use o nome do seu contêiner) não deve ter erros novos. Mensagens com <code>ecv-cash</code> são sobre as rotas do ECV Cash.</li>
+    <li><code>free -h</code> mostra a memória em uso. No limite, o plano precisa de mais RAM.</li>
+  </ul>
+  <p>Se o OpenClaw tiver qualquer problema, pare só o ECV Cash:</p>
+  <div class="cb"><pre><code>cd /opt/ecv-cash/deploy && docker compose down</code></pre></div>
+  <div class="nota erro"><span>✕</span><p>Nunca use <code>docker compose down -v</code>: o <code>-v</code> apaga o banco do ECV Cash.</p></div>
+</section>
+
+<section id="rotina">
+  <h2>Rotina</h2>
+  <p><b>Atualizar</b> para a versão nova do GitHub (as migrações rodam sozinhas):</p>
+  <div class="cb"><pre><code>cd /opt/ecv-cash && ./deploy/atualizar.sh</code></pre></div>
+  <p><b>Backup diário às 3h</b>, guardando 14 dias em <code>/var/backups/ecv-cash</code>:</p>
+  <div class="cb"><pre><code>(crontab -l 2>/dev/null; echo '0 3 * * * /opt/ecv-cash/deploy/backup.sh >> /var/log/ecv-backup.log 2>&1') | crontab -
+/opt/ecv-cash/deploy/backup.sh</code></pre></div>
+  <p>A segunda linha roda um backup agora, para testar. Copie os arquivos para fora do servidor de vez em quando. A restauração está em <code>docs/05-publicacao.md</code>, no repositório.</p>
+  <p><b>Logs</b>, dentro de <code>/opt/ecv-cash/deploy</code>:</p>
+  <div class="cb"><pre><code>docker compose logs -f api</code></pre></div>
+</section>
+
+<section id="problemas">
+  <h2>Problemas</h2>
+  <details><summary>Página “404 page not found” em app ou admin</summary>
+    <p>O Traefik não achou a rota. Confira se <code>REDE_TRAEFIK</code> é a rede em que o Traefik realmente está e os nomes dos entrypoints. Depois rode <code>docker compose up -d</code> e veja <code>docker logs --tail 100 traefik | grep -i ecv-cash</code>.</p></details>
+  <details><summary>Certificado inválido ou aviso do navegador</summary>
+    <p>O DNS ainda não propagou ou o nome do certresolver está errado. Veja <code>docker logs traefik | grep -i -E "acme|certificate"</code>.</p></details>
+  <details><summary>502 Bad Gateway</summary>
+    <p>O Caddy ou a API não subiu. Rode <code>docker compose ps</code> e <code>docker compose logs api site</code>.</p></details>
+  <details><summary>“Origem não permitida” no login</summary>
+    <p>O domínio do <code>.env</code> não bate com o endereço aberto no navegador. Corrija o <code>.env</code> e rode <code>docker compose up -d</code>.</p></details>
+  <details><summary>Todo mundo parece ter o mesmo IP nas tentativas de login</summary>
+    <p>A API lê o IP real por dois proxies (Traefik e Caddy), definido por <code>TRUST_PROXY_SALTOS=2</code> no compose. Se um dia colocarem outro proxy na frente, como a Cloudflare, esse número passa a ser 3.</p></details>
+</section>
+</main>
+</div>
+
+<script>
+(function () {
+  var campos = { dominio: document.getElementById('f-dominio'), rede: document.getElementById('f-rede'), cert: document.getElementById('f-cert') };
+  var alvos = [].slice.call(document.querySelectorAll('code'));
+  alvos.forEach(function (c) { c.setAttribute('data-orig', c.textContent); });
+  function pintar() {
+    var d = campos.dominio.value.trim(), r = campos.rede.value.trim(), k = campos.cert.value.trim();
+    alvos.forEach(function (c) {
+      var t = c.getAttribute('data-orig');
+      if (d) t = t.replace(/SEUDOMINIO/g, d);
+      if (r) t = t.replace(/REDE_TRAEFIK/g, r);
+      if (k) t = t.replace(/CERTRESOLVER/g, k);
+      if (c.textContent !== t) c.textContent = t;
+    });
+  }
+  Object.keys(campos).forEach(function (k) { campos[k].addEventListener('input', pintar); });
+
+  document.querySelectorAll('.cb').forEach(function (cb) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Copiar';
+    b.addEventListener('click', function () {
+      var code = cb.querySelector('code'), txt = code.textContent;
+      function ok() { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1500); }
+      function sel() { var s = window.getSelection(), r = document.createRange(); r.selectNodeContents(code); s.removeAllRanges(); s.addRange(r); b.textContent = 'Selecionado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1500); }
+      try { navigator.clipboard.writeText(txt).then(ok, sel); } catch (e) { sel(); }
+    });
+    cb.appendChild(b);
+  });
+
+  var links = [].slice.call(document.querySelectorAll('nav.toc a'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) links.forEach(function (a) { a.setAttribute('aria-current', a.getAttribute('href') === '#' + e.target.id ? 'true' : 'false'); }); });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    document.querySelectorAll('section[id]').forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
