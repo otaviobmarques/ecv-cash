@@ -1,0 +1,4 @@
+# Só para o teste no GitHub Actions: publica o site numa porta local para o teste poder chamá-lo. Nunca usar na VPS.
+services:
+  site:
+    ports: ["127.0.0.1:8080:80"]
