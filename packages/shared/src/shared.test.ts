@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MATRIZ, PERFIS, crc16, gerarPixCopiaECola, normalizarChavePix, periodoSugerido, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
+  MATRIZ, PERFIS, paraCsv, crc16, gerarPixCopiaECola, normalizarChavePix, periodoSugerido, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
   normalizarPlaca, criarEmpresaSchema, descontoDoLaudo, laudoSchema, loteSchema, normalizarChassi, resolverPreco, clienteSchema, contaFinanceiraSchema, custoDoLaudo, diaAnterior, diaSeguinte, margemDoLaudo, precoSchema, servicoCustoSchema, PLANO_CONTAS_PADRAO, FORMAS_PAGAMENTO_PADRAO, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
 } from './index';
 
@@ -289,5 +289,20 @@ describe('PIX e períodos de fatura', () => {
     expect(periodoSugerido('QUINZENAL', '2027-01-05')).toEqual({ ini: '2026-12-16', fim: '2026-12-31' });
     expect(periodoSugerido('MENSAL', '2026-03-10')).toEqual({ ini: '2026-02-01', fim: '2026-02-28' });
     expect(periodoSugerido('MENSAL', '2027-01-03')).toEqual({ ini: '2026-12-01', fim: '2026-12-31' });
+  });
+});
+
+describe('exportação CSV', () => {
+  const cols = [{ chave: 'nome', rotulo: 'Cliente', tipo: 'texto' as const }, { chave: 'valor', rotulo: 'Valor', tipo: 'dinheiro' as const }, { chave: 'dia', rotulo: 'Data', tipo: 'data' as const }];
+  it('usa ponto e vírgula, vírgula decimal, data brasileira e BOM', () => {
+    const csv = paraCsv(cols, [{ nome: 'Auto Center', valor: 123456, dia: '2026-11-02' }], { valor: 123456 });
+    expect(csv.startsWith('﻿')).toBe(true);
+    expect(csv.split('\r\n')).toEqual(['﻿Cliente;Valor;Data', 'Auto Center;1234,56;02/11/2026', 'Total;1234,56;', '']);
+  });
+  it('protege contra fórmula em planilha e escapa aspas e quebras de linha', () => {
+    const csv = paraCsv(cols, [{ nome: '=HYPERLINK("http://x")', valor: 1, dia: null }, { nome: 'Loja "Centro"; filial', valor: -5, dia: null }]);
+    const l = csv.split('\r\n');
+    expect(l[1]).toBe(`"'=HYPERLINK(""http://x"")";0,01;`);
+    expect(l[2]).toBe('"Loja ""Centro""; filial";-0,05;');
   });
 });

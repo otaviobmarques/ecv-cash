@@ -124,6 +124,8 @@ function Detalhe({ id, eu }: { id: string; eu: Eu }) {
         {!pode && <p className="peq mut">Seu perfil consulta os dados do cliente.</p>}
       </div>
 
+      {eu.rede && c.tipoPessoa === 'PF' && <Privacidade id={id} nome={c.nome} />}
+
       <div className="cartao pilha">
         <h2>Tabela de preços</h2>
         <div className="tw"><table>
@@ -196,3 +198,32 @@ function FormPreco({ clienteId, alvo, onFechar }: { clienteId: string; alvo: { s
   );
 }
 export type { Perfil };
+
+/** Pedidos de titulares de dados (LGPD): ver o que o sistema guarda e anonimizar. Só o Administrativo. */
+function Privacidade({ id, nome }: { id: string; nome: string }) {
+  const qc = useQueryClient(); const { avisar } = useToast();
+  const [dados, setDados] = useState<Record<string, unknown> | null>(null);
+  const [confirmar, setConfirmar] = useState(false); const [motivo, setMotivo] = useState(''); const [erro, setErro] = useState<string | null>(null);
+  const ver = useMutation({ mutationFn: () => api.get<Record<string, unknown>>(`/lgpd/clientes/${id}/dados`), onSuccess: setDados, onError: (e) => setErro(mensagemDoErro(e)) });
+  const anon = useMutation({
+    mutationFn: () => api.post(`/lgpd/clientes/${id}/anonimizar`, { motivo }),
+    onSuccess: () => { avisar('Cliente anonimizado.'); setConfirmar(false); setDados(null); qc.invalidateQueries({ queryKey: ['cliente', id] }); qc.invalidateQueries({ queryKey: ['clientes'] }); },
+    onError: (e) => setErro(mensagemDoErro(e)),
+  });
+  return (
+    <div className="cartao pilha">
+      <h2>Privacidade (LGPD)</h2>
+      <p className="mut peq">Pedido do titular dos dados: ver o que o sistema guarda sobre {nome} ou apagar o que identifica a pessoa. Valores e datas dos lançamentos ficam, pela obrigação legal de guarda de 5 anos. Cada consulta fica registrada na auditoria.</p>
+      {erro && <Aviso tipo="erro">{erro}</Aviso>}
+      <div className="linha"><Botao variante="sec" carregando={ver.isPending} onClick={() => { setErro(null); ver.mutate(); }}>Ver dados do titular</Botao><Botao variante="perigo" onClick={() => { setConfirmar(true); setErro(null); }}>Anonimizar</Botao></div>
+      {dados && <pre style={{ background: 'var(--suave)', padding: 12, borderRadius: 8, overflow: 'auto', maxHeight: 280, fontSize: 12 }}>{JSON.stringify(dados, null, 2)}</pre>}
+      {confirmar && (
+        <div className="pilha">
+          <Aviso tipo="aviso">Isto apaga nome, CPF, e-mails e telefone e não tem volta. O cliente fica inativo.</Aviso>
+          <Campo rotulo="Motivo (pedido do titular, data...)" obrigatorio value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <div className="linha"><Botao variante="perigo" carregando={anon.isPending} onClick={() => anon.mutate()}>Anonimizar de vez</Botao><Botao variante="sec" onClick={() => setConfirmar(false)}>Voltar</Botao></div>
+        </div>
+      )}
+    </div>
+  );
+}

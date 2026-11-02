@@ -102,3 +102,12 @@ export interface PagamentoPagar { id: string; data: string; principalCentavos: n
 export interface TituloPagarDetalhe extends TituloPagar { pagamentos: PagamentoPagar[]; anexo: { id: string; nome: string; mime: string } | null; motivoCancelamento: string | null; custos: { laudos: number; de: string; ate: string } | null }
 export interface Recorrencia { id: string; descricao: string; fornecedor: string | null; valorCentavos: number; frequencia: 'SEMANAL' | 'QUINZENAL' | 'MENSAL' | 'ANUAL'; dia: number; inicio: string; fim: string | null; geradaAte: string | null; ativa: boolean }
 export interface CustoAApurar { fornecedorId: string; fornecedor: string; custos: number; laudos: number; totalCentavos: number }
+
+export interface RelatorioDef { id: string; titulo: string; agrupar: string[] }
+export interface RelatorioResposta { id: string; titulo: string; de?: string; ate?: string; colunas: { chave: string; rotulo: string; tipo: 'texto' | 'data' | 'dinheiro' | 'inteiro' | 'percentual' }[]; linhas: Record<string, unknown>[]; totais: Record<string, unknown> | null }
+export interface Painel {
+  perfil: string | null; hoje?: string; vinculado?: boolean; laudosHoje?: number; laudosMes?: number; valorHoje?: number; valorMes?: number; manuaisARevisar?: number; pedidosCancelamento?: number;
+  aReceberCentavos?: number; vencidoCentavos?: number; aPagarCentavos?: number; pagarVencidoCentavos?: number; pendentesAprovacao?: number; saldoCaixaCentavos?: number; entradasMesCentavos?: number; saidasMesCentavos?: number;
+  serie?: { dia: string; valor: number; laudos: number }[]; ultimos?: { id: string; numero: number; placa: string; servico: string; dataLaudo: string }[];
+  lojas?: { id: string; nome: string; laudosMes: number; valorMes: number; aReceberCentavos: number; vencidoCentavos: number; aPagarCentavos: number }[];
+}
