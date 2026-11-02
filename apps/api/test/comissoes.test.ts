@@ -12,7 +12,7 @@ describe('comissões do vistoriador', () => {
   let app: INestApplication; let db: DbService; let cen: Awaited<ReturnType<typeof criarCenario>>;
   type C = ReturnType<typeof cliente>;
   let adm: C, ger: C, fin: C, vis: C, gerA2: C;
-  let servico: string, cli: string, pix: string, faturado: string, ana: string, joao: string, banco: string;
+  let servico: string, cli: string, pix: string, ana: string, joao: string, banco: string;
   const A1 = () => cen.A.empresaIds[0]!;
   const entrar = async (nome: string) => { const c = cliente(app); expect((await c.login(cen.mail(nome))).status, nome).toBe(200); return c; };
   const lancar = async (vistoriadorId: string, extra: object = {}) => {
@@ -31,7 +31,7 @@ describe('comissões do vistoriador', () => {
     cli = (await adm.post('/clientes', { tipoPessoa: 'PJ', nome: `Cliente ${unico()}` })).body.id;
     await adm.post(`/clientes/${cli}/precos`, { servicoId: servico, valorCentavos: 18000, vigenciaIni: '2025-01-01' });
     const formas = (await adm.get('/formas-pagamento')).body as { id: string; nome: string }[];
-    pix = formas.find((f) => f.nome === 'PIX')!.id; faturado = formas.find((f) => f.nome === 'Faturado')!.id;
+    pix = formas.find((f) => f.nome === 'PIX')!.id;
     ana = (await adm.post('/vistoriadores', { nome: 'Ana', empresaIds: [A1()], usuarioId: cen.A.usuarioIds[3] })).body.id;
     joao = (await adm.post('/vistoriadores', { nome: 'João', empresaIds: [A1()] })).body.id;
     banco = (await adm.post('/contas-financeiras', { empresaId: A1(), nome: 'Banco', tipo: 'BANCO', saldoInicialCentavos: 0, dataSaldoInicial: '2025-01-01' })).body.conta.id;
@@ -54,31 +54,31 @@ describe('comissões do vistoriador', () => {
     it('percentual sobre o valor cobrado; desconto reduz a comissão', async () => {
       expect((await regra(ger, { tipo: 'PERCENTUAL', percentualBp: 1000 })).status).toBe(201);
       await lancar(joao); await lancar(joao, { valorCobradoCentavos: 15000, ajusteMotivo: 'Acordo comercial' });
-      expect((await apur(joao))[0]).toMatchObject({ laudos: 2, totalCentavos: 1800 + 1500 });
+      expect((await apur(joao))[0]!).toMatchObject({ laudos: 2, totalCentavos: 1800 + 1500 });
     });
     it('a regra mais específica vence: vistoriador com valor fixo', async () => {
       expect((await regra(ger, { tipo: 'VALOR', valorCentavos: 500, vistoriadorId: ana })).status).toBe(201);
       await lancar(ana); await lancar(joao);
-      expect((await apur(ana))[0]).toMatchObject({ laudos: 1, totalCentavos: 500 });
-      expect((await apur(joao))[0]).toMatchObject({ laudos: 3, totalCentavos: 1800 + 1500 + 1800 });
+      expect((await apur(ana))[0]!).toMatchObject({ laudos: 1, totalCentavos: 500 });
+      expect((await apur(joao))[0]!).toMatchObject({ laudos: 3, totalCentavos: 1800 + 1500 + 1800 });
     });
     it('mudar a regra depois não reescreve o laudo já lançado', async () => {
       await limparRegras();
       expect((await regra(ger, { tipo: 'PERCENTUAL', percentualBp: 2000 })).status).toBe(201);
       await lancar(joao);
-      expect((await apur(joao))[0].totalCentavos).toBe(1800 + 1500 + 1800 + 3600);
+      expect((await apur(joao))[0]!.totalCentavos).toBe(1800 + 1500 + 1800 + 3600);
     });
     it('editar o valor do laudo recalcula a comissão', async () => {
       const l = await lancar(joao);
-      const antes = (await apur(joao))[0].totalCentavos;
+      const antes = (await apur(joao))[0]!.totalCentavos;
       expect((await ger.patch(`/laudos/${l.id}`, { valorCobradoCentavos: 10000, ajusteMotivo: 'Desconto de balcão' })).status).toBe(200);
-      expect((await apur(joao))[0].totalCentavos).toBe(antes - 3600 + 2000);
+      expect((await apur(joao))[0]!.totalCentavos).toBe(antes - 3600 + 2000);
     });
     it('laudo cancelado perde a comissão', async () => {
       const l = await lancar(joao);
-      const antes = (await apur(joao))[0].totalCentavos;
+      const antes = (await apur(joao))[0]!.totalCentavos;
       await ger.post(`/laudos/${l.id}/cancelar`, { motivo: 'Lançado em duplicidade' });
-      expect((await apur(joao))[0].totalCentavos).toBe(antes - 3600);
+      expect((await apur(joao))[0]!.totalCentavos).toBe(antes - 3600);
     });
   });
 
@@ -126,7 +126,7 @@ describe('comissões do vistoriador', () => {
       void outro;
       const j = lista.find((f) => f.vistoriador === 'João')!;
       expect((await ger.post(`/comissoes/fechamentos/${j.id}/cancelar`, { motivo: 'Refazer o período' })).status).toBe(201);
-      expect((await apur(joao))[0].totalCentavos).toBeGreaterThan(0);
+      expect((await apur(joao))[0]!.totalCentavos).toBeGreaterThan(0);
       expect((await ger.post(`/comissoes/fechamentos/${j.id}/cancelar`, { motivo: 'De novo' })).status).toBe(409);
     });
     it('vistoriador desta loja só aparece para ela; outra loja e outro grupo não enxergam nada', async () => {
@@ -143,5 +143,4 @@ describe('comissões do vistoriador', () => {
       expect(acoes).toEqual(expect.arrayContaining(['comissao.regra_criada', 'comissao.regra_alterada', 'comissao.fechada', 'comissao.fechamento_cancelado']));
     });
   });
-  void faturado;
 });

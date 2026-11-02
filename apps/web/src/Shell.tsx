@@ -17,6 +17,7 @@ const MENU: { para: string; rotulo: string; icone: NomeIcone; perm?: Permissao; 
   { para: '/pagar', rotulo: 'A pagar', icone: 'caixa', perm: 'pagar.ver' },
   { para: '/cartoes', rotulo: 'Cartões e cheques', icone: 'caixa', perm: 'cheque.controlar' },
   { para: '/comissoes', rotulo: 'Comissões', icone: 'usuarios', perm: 'comissao.ver' },
+  { para: '/royalties', rotulo: 'Royalties', icone: 'empresas', perm: 'repasse.ver' },
   { para: '/faturados', rotulo: 'Faturados', icone: 'laudo', perm: 'receber.ver' },
   { para: '/caixa', rotulo: 'Caixa', icone: 'caixa', perm: 'caixa.ver' },
   { para: '/relatorios', rotulo: 'Relatórios', icone: 'auditoria', perm: 'relatorio.operacional' },
