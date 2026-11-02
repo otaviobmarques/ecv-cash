@@ -52,7 +52,18 @@ export const configFinanceiraSchema = z.object({
   aprovacaoPagarObrigatoria: z.boolean().optional(),
   financeiroAprovaPagar: z.boolean().optional(),
   financeiroVeDre: z.boolean().optional(),
-});
+  /** acima disso só o Administrativo aprova conta a pagar (vazio = sem limite) */
+  aprovacaoLimiteGerenteCentavos: z.union([z.number().int().min(1).max(100_000_000_00), z.null()]).optional(),
+  /** acima disso são necessárias duas aprovações de pessoas diferentes, uma do Administrativo (vazio = nunca) */
+  aprovacaoDuplaAcimaCentavos: z.union([z.number().int().min(1).max(100_000_000_00), z.null()]).optional(),
+}).refine((c) => c.aprovacaoLimiteGerenteCentavos == null || c.aprovacaoDuplaAcimaCentavos == null || c.aprovacaoDuplaAcimaCentavos >= c.aprovacaoLimiteGerenteCentavos, { message: 'O valor da dupla aprovação não pode ser menor que o limite do Gerente.', path: ['aprovacaoDuplaAcimaCentavos'] });
+
+/** O que uma conta a pagar precisa para ser aprovada, pelo valor e pelas regras da loja. */
+export function requisitosDeAprovacao(valorCentavos: number, cfg: { aprovacaoLimiteGerenteCentavos?: number | null; aprovacaoDuplaAcimaCentavos?: number | null }): { somenteAdministrativo: boolean; aprovacoes: 1 | 2; exigeAdministrativo: boolean } {
+  const dupla = cfg.aprovacaoDuplaAcimaCentavos != null && valorCentavos > cfg.aprovacaoDuplaAcimaCentavos;
+  const adm = dupla || (cfg.aprovacaoLimiteGerenteCentavos != null && valorCentavos > cfg.aprovacaoLimiteGerenteCentavos);
+  return { somenteAdministrativo: adm && !dupla, aprovacoes: dupla ? 2 : 1, exigeAdministrativo: adm };
+}
 
 export const liquidarCartaoSchema = z.object({
   contaId: z.string().uuid('Escolha a conta em que a operadora depositou.'),

@@ -79,7 +79,7 @@ export interface BaixaItem {
 }
 export interface TituloDetalhe extends TituloItem { baixas: BaixaItem[]; numeroNf: string | null; motivoCancelamento: string | null; formaTipo: string }
 export interface SimulacaoBaixa { principalCentavos: number; saldoCentavos: number; data: string; diasAtraso: number; multaCentavos: number; jurosCentavos: number; totalCentavos: number }
-export interface ConfigFinanceira { perdaoLimiteCentavos: number; aprovacaoPagarObrigatoria: boolean; financeiroAprovaPagar: boolean; financeiroVeDre: boolean }
+export interface ConfigFinanceira { perdaoLimiteCentavos: number; aprovacaoPagarObrigatoria: boolean; financeiroAprovaPagar: boolean; financeiroVeDre: boolean; aprovacaoLimiteGerenteCentavos: number | null; aprovacaoDuplaAcimaCentavos: number | null }
 
 export interface FaturaItem {
   id: string; clienteId: string; cliente: string; numero: number; periodoIni: string; periodoFim: string; emissao: string; vencimento: string; totalCentavos: number; saldoCentavos: number;
@@ -99,7 +99,7 @@ export interface TituloPagar {
   motivoRejeicao: string | null; criadoPorId: string | null; criadoPor: string | null; aprovadoPor: string | null; vencido: boolean; recorrenciaId: string | null; rateioId: string | null;
 }
 export interface PagamentoPagar { id: string; data: string; principalCentavos: number; jurosCentavos: number; multaCentavos: number; descontoCentavos: number; pagoTotalCentavos: number; conta: string; comprovanteId: string | null; estornoDe: string | null; motivo: string | null; estornado: boolean }
-export interface TituloPagarDetalhe extends TituloPagar { pagamentos: PagamentoPagar[]; anexo: { id: string; nome: string; mime: string } | null; motivoCancelamento: string | null; custos: { laudos: number; de: string; ate: string } | null }
+export interface TituloPagarDetalhe extends TituloPagar { aprovacoes: { usuario: string; perfil: string; criadoEm: string }[]; requisitos: { somenteAdministrativo: boolean; aprovacoes: number; exigeAdministrativo: boolean }; pagamentos: PagamentoPagar[]; anexo: { id: string; nome: string; mime: string } | null; motivoCancelamento: string | null; custos: { laudos: number; de: string; ate: string } | null }
 export interface Recorrencia { id: string; descricao: string; fornecedor: string | null; valorCentavos: number; frequencia: 'SEMANAL' | 'QUINZENAL' | 'MENSAL' | 'ANUAL'; dia: number; inicio: string; fim: string | null; geradaAte: string | null; ativa: boolean }
 export interface CustoAApurar { fornecedorId: string; fornecedor: string; custos: number; laudos: number; totalCentavos: number }
 

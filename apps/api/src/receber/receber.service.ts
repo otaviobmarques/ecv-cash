@@ -128,9 +128,10 @@ export class ReceberService {
     exigir(a, 'receber.ver', empresaId);
     return this.db.tenant(contextoDb(a), async (c) => {
       const r = (await c.query(
-        `SELECT perdao_limite_centavos AS "perdaoLimiteCentavos", aprovacao_pagar_obrigatoria AS "aprovacaoPagarObrigatoria", financeiro_aprova_pagar AS "financeiroAprovaPagar", financeiro_ve_dre AS "financeiroVeDre"
+        `SELECT perdao_limite_centavos AS "perdaoLimiteCentavos", aprovacao_pagar_obrigatoria AS "aprovacaoPagarObrigatoria", financeiro_aprova_pagar AS "financeiroAprovaPagar", financeiro_ve_dre AS "financeiroVeDre",
+                aprovacao_limite_gerente_centavos AS "aprovacaoLimiteGerenteCentavos", aprovacao_dupla_acima_centavos AS "aprovacaoDuplaAcimaCentavos"
            FROM empresa_config WHERE empresa_id = $1`, [empresaId])).rows[0];
-      return r ?? { perdaoLimiteCentavos: 5000, aprovacaoPagarObrigatoria: true, financeiroAprovaPagar: false, financeiroVeDre: false };
+      return r ?? { perdaoLimiteCentavos: 5000, aprovacaoPagarObrigatoria: true, financeiroAprovaPagar: false, financeiroVeDre: false, aprovacaoLimiteGerenteCentavos: null, aprovacaoDuplaAcimaCentavos: null };
     });
   }
 
@@ -141,10 +142,11 @@ export class ReceberService {
       const antes = await this.config(a);
       const novo = { ...antes, ...Object.fromEntries(Object.entries(d).filter(([, v]) => v !== undefined)) };
       await c.query(
-        `INSERT INTO empresa_config (empresa_id, grupo_id, perdao_limite_centavos, aprovacao_pagar_obrigatoria, financeiro_aprova_pagar, financeiro_ve_dre) VALUES ($1,$2,$3,$4,$5,$6)
+        `INSERT INTO empresa_config (empresa_id, grupo_id, perdao_limite_centavos, aprovacao_pagar_obrigatoria, financeiro_aprova_pagar, financeiro_ve_dre, aprovacao_limite_gerente_centavos, aprovacao_dupla_acima_centavos) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
          ON CONFLICT (empresa_id) DO UPDATE SET perdao_limite_centavos = EXCLUDED.perdao_limite_centavos, aprovacao_pagar_obrigatoria = EXCLUDED.aprovacao_pagar_obrigatoria,
-           financeiro_aprova_pagar = EXCLUDED.financeiro_aprova_pagar, financeiro_ve_dre = EXCLUDED.financeiro_ve_dre, atualizado_em = now()`,
-        [empresaId, a.grupoId, novo.perdaoLimiteCentavos, novo.aprovacaoPagarObrigatoria, novo.financeiroAprovaPagar, novo.financeiroVeDre]);
+           financeiro_aprova_pagar = EXCLUDED.financeiro_aprova_pagar, financeiro_ve_dre = EXCLUDED.financeiro_ve_dre,
+           aprovacao_limite_gerente_centavos = EXCLUDED.aprovacao_limite_gerente_centavos, aprovacao_dupla_acima_centavos = EXCLUDED.aprovacao_dupla_acima_centavos, atualizado_em = now()`,
+        [empresaId, a.grupoId, novo.perdaoLimiteCentavos, novo.aprovacaoPagarObrigatoria, novo.financeiroAprovaPagar, novo.financeiroVeDre, novo.aprovacaoLimiteGerenteCentavos ?? null, novo.aprovacaoDuplaAcimaCentavos ?? null]);
       await auditar(c, a, { acao: 'config_financeira.alterada', entidade: 'empresa_config', entidadeId: empresaId, empresaId, antes, depois: novo });
       return novo;
     });

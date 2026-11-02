@@ -137,7 +137,7 @@ function Detalhe({ id, eu, onFechar, onMudou }: { id: string | null; eu: Eu; onF
   const fechar = () => { setModo(null); setErro(null); setCampos({}); onFechar(); };
   const fim = (msg: string) => () => { avisar(msg); onMudou(); setModo(null); setErro(null); setCampos({}); d.refetch(); };
   const falha = (e: unknown) => { setErro(mensagemDoErro(e)); setCampos((e as ErroApi).campos ?? {}); };
-  const aprovar = useMutation({ mutationFn: () => api.post(`/pagar/titulos/${id}/aprovar`), onSuccess: fim('Conta aprovada.'), onError: falha });
+  const aprovar = useMutation({ mutationFn: () => api.post<{ status: string; aprovacoesDadas?: number; aprovacoesNecessarias?: number }>(`/pagar/titulos/${id}/aprovar`), onSuccess: (r) => fim(r.status === 'APROVADO' ? 'Conta aprovada.' : `Aprovação registrada (${r.aprovacoesDadas} de ${r.aprovacoesNecessarias}). Falta mais uma.`)(), onError: falha });
   const enviar = useMutation({ mutationFn: () => api.post(`/pagar/titulos/${id}/enviar`), onSuccess: fim('Enviada para aprovação.'), onError: falha });
   const rejeitar = useMutation({ mutationFn: () => api.post(`/pagar/titulos/${id}/rejeitar`, { motivo: f.motivo }), onSuccess: fim('Conta devolvida como rascunho.'), onError: falha });
   const cancelar = useMutation({ mutationFn: () => api.post(`/pagar/titulos/${id}/cancelar`, { motivo: f.motivo }), onSuccess: fim('Conta cancelada.'), onError: falha });
@@ -162,6 +162,12 @@ function Detalhe({ id, eu, onFechar, onMudou }: { id: string | null; eu: Eu; onF
               <div key={k} style={{ display: 'contents' }}><dt className="mut">{k}</dt><dd style={{ margin: 0 }}>{v}</dd></div>
             ))}
           </dl>
+          {(t.status === 'PENDENTE' || t.aprovacoes.length > 0) && (
+            <Aviso tipo={t.status === 'PENDENTE' ? 'aviso' : 'info'}>
+              {t.requisitos.aprovacoes === 2 ? 'Esta conta precisa de duas aprovações de pessoas diferentes, uma delas do Administrativo.' : t.requisitos.somenteAdministrativo ? 'Pelo valor, só o Administrativo aprova esta conta.' : 'Esta conta precisa de uma aprovação.'}
+              {t.aprovacoes.length > 0 && <> Aprovações até agora: {t.aprovacoes.map((x) => x.usuario).join(', ')}.</>}
+            </Aviso>
+          )}
           {t.custos && <Aviso tipo="info">Reúne os custos de {t.custos.laudos} laudos de {dataBr(t.custos.de)} a {dataBr(t.custos.ate)}.</Aviso>}
           {t.motivoRejeicao && t.status === 'RASCUNHO' && <Aviso tipo="aviso">Devolvida: {t.motivoRejeicao}</Aviso>}
           {t.motivoCancelamento && <Aviso tipo="info">Cancelada: {t.motivoCancelamento}</Aviso>}
@@ -181,7 +187,7 @@ function Detalhe({ id, eu, onFechar, onMudou }: { id: string | null; eu: Eu; onF
           )}
           {modo === null && (
             <div className="linha">
-              {t.status === 'PENDENTE' && eu.permissoes.includes('pagar.ver') && !euCriei && (<><Botao carregando={aprovar.isPending} onClick={() => aprovar.mutate()}>Aprovar</Botao><Botao variante="sec" onClick={() => { setModo('rejeitar'); setF({ ...f, motivo: '' }); }}>Devolver</Botao></>)}
+              {t.status === 'PENDENTE' && eu.permissoes.includes('pagar.ver') && !euCriei && !t.aprovacoes.some((x) => x.usuario === eu.nome) && (<><Botao carregando={aprovar.isPending} onClick={() => aprovar.mutate()}>Aprovar</Botao><Botao variante="sec" onClick={() => { setModo('rejeitar'); setF({ ...f, motivo: '' }); }}>Devolver</Botao></>)}
               {t.status === 'PENDENTE' && euCriei && <span className="mut peq">Quem criou a conta não pode aprová-la.</span>}
               {t.status === 'RASCUNHO' && <Botao carregando={enviar.isPending} onClick={() => enviar.mutate()}>Enviar para aprovação</Botao>}
               {aberta && eu.permissoes.includes('pagar.pagar') && <Botao onClick={() => { setModo('pagar'); setF({ data: hojeIso(), principal: null, juros: null, multa: null, desconto: null, conta: '', motivo: '' }); setComp(null); }}>Registrar pagamento</Botao>}

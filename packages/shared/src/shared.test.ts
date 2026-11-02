@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MATRIZ, PERFIS, lerCsv, normalizarColuna, decodificarArquivo, paraCsv, crc16, gerarPixCopiaECola, normalizarChavePix, periodoSugerido, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
+  MATRIZ, PERFIS, requisitosDeAprovacao, lerCsv, normalizarColuna, decodificarArquivo, paraCsv, crc16, gerarPixCopiaECola, normalizarChavePix, periodoSugerido, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
   normalizarPlaca, criarEmpresaSchema, descontoDoLaudo, laudoSchema, loteSchema, normalizarChassi, resolverPreco, clienteSchema, contaFinanceiraSchema, custoDoLaudo, diaAnterior, diaSeguinte, margemDoLaudo, precoSchema, servicoCustoSchema, PLANO_CONTAS_PADRAO, FORMAS_PAGAMENTO_PADRAO, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
 } from './index';
 
@@ -321,5 +321,21 @@ describe('leitura de CSV', () => {
     expect(normalizarColuna(' Razão Social (PJ) ')).toBe('razao_social_pj');
     expect(decodificarArquivo(new Uint8Array([0x4a, 0x6f, 0xe3, 0x6f]))).toBe('João'); // "João" em Windows-1252
     expect(decodificarArquivo(new TextEncoder().encode('João'))).toBe('João');
+  });
+});
+
+describe('aprovação em níveis', () => {
+  const cfg = { aprovacaoLimiteGerenteCentavos: 100_000, aprovacaoDuplaAcimaCentavos: 500_000 };
+  it('até o limite do Gerente, uma aprovação de quem já podia aprovar', () => {
+    expect(requisitosDeAprovacao(100_000, cfg)).toEqual({ somenteAdministrativo: false, aprovacoes: 1, exigeAdministrativo: false });
+  });
+  it('acima do limite do Gerente, só o Administrativo, uma aprovação', () => {
+    expect(requisitosDeAprovacao(100_001, cfg)).toEqual({ somenteAdministrativo: true, aprovacoes: 1, exigeAdministrativo: true });
+  });
+  it('acima do valor da dupla aprovação, duas pessoas, uma delas Administrativo', () => {
+    expect(requisitosDeAprovacao(500_001, cfg)).toEqual({ somenteAdministrativo: false, aprovacoes: 2, exigeAdministrativo: true });
+  });
+  it('sem limites configurados, tudo como antes', () => {
+    expect(requisitosDeAprovacao(99_999_999, {})).toEqual({ somenteAdministrativo: false, aprovacoes: 1, exigeAdministrativo: false });
   });
 });

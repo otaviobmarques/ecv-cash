@@ -26,7 +26,7 @@
 - [x] Consolidado da rede: DRE (competência e caixa) e fluxo de caixa de todas as lojas, com eliminação do movimento entre empresas do grupo. O Administrativo marca, em Cadastros > Empresas do grupo, quais clientes e fornecedores são lojas da própria rede.
 - [x] Balanço gerencial: caixa, a receber, cartões, cheques e a pagar vêm do sistema; imobilizado, empréstimos e capital são informados à mão por data-base; o patrimônio líquido fecha a conta. Vale por loja ou consolidado.
 - [x] Importação por planilha (CSV): clientes, fornecedores e preços, com modelo para baixar, conferência antes de gravar, linha a linha, sem alterar quem já existe.
-- [ ] Aprovação de pagamentos em níveis (por faixa de valor).
+- [x] Aprovação de pagamentos em níveis, por faixa de valor e por loja: até um limite o Gerente aprova; acima, só o Administrativo; acima de outro valor, duas pessoas diferentes (uma do Administrativo). Aprovações valem enquanto o valor não muda.
 - [ ] LGPD avançada (prazos de retenção) e logotipo da empresa nos PDFs (depende do armazenamento S3).
 
 ## Fase 4: futuro

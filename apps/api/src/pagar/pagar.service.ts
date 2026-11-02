@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { z } from 'zod';
-import { formatarBRL, ratear, temPermissao, type apurarCustosSchema, type editarTituloPagarSchema, type filtroPagarSchema, type pagamentoPagarSchema, type rateioSchema, type recorrenciaSchema, type tituloPagarSchema } from '@ecv/shared';
+import { formatarBRL, ratear, requisitosDeAprovacao, temPermissao, type apurarCustosSchema, type editarTituloPagarSchema, type filtroPagarSchema, type pagamentoPagarSchema, type rateioSchema, type recorrenciaSchema, type tituloPagarSchema } from '@ecv/shared';
 import { DbService } from '../db/db.service';
 import { Acesso, contextoDb, exigir, perfilEm } from '../common/acesso';
 import { auditar } from '../common/auditoria';
@@ -96,6 +96,7 @@ export class PagarService {
       if (mexeuNoAprovado && (await this.config(c, t.empresaId)).aprovacaoObrigatoria) { set.push(`status = 'PENDENTE'`, 'aprovado_por = NULL', 'aprovado_em = NULL'); }
       if (set.length === 0) return t;
       await c.query(`UPDATE titulo_pagar SET ${set.join(', ')} WHERE id = $1`, v);
+      if (mexeuNoAprovado || (t.status === 'PENDENTE' && (d.valorCentavos !== undefined || d.vencimento !== undefined || d.fornecedorId !== undefined || d.beneficiario !== undefined))) await c.query('UPDATE aprovacao_pagar SET valida = false WHERE titulo_id = $1 AND valida', [id]);
       const depois = await this.lerTitulo(c, id);
       await auditar(c, a, { acao: 'pagar.editado', entidade: 'titulo_pagar', entidadeId: id, empresaId: t.empresaId,
         antes: { descricao: t.descricao, vencimento: t.vencimento, valorCentavos: t.valorCentavos, status: t.status }, depois: { descricao: depois.descricao, vencimento: depois.vencimento, valorCentavos: depois.valorCentavos, status: depois.status } });
@@ -115,14 +116,37 @@ export class PagarService {
     });
   }
 
+  /** Regras de aprovação da loja: limite do Gerente e valor a partir do qual são duas aprovações. */
+  private async regrasAprovacao(c: PoolClient, empresaId: string) {
+    const r = (await c.query('SELECT aprovacao_limite_gerente_centavos AS lg, aprovacao_dupla_acima_centavos AS da FROM empresa_config WHERE empresa_id = $1', [empresaId])).rows[0];
+    return { aprovacaoLimiteGerenteCentavos: r?.lg == null ? null : Number(r.lg), aprovacaoDuplaAcimaCentavos: r?.da == null ? null : Number(r.da) };
+  }
+
+  /**
+   * Aprovação em níveis: até o limite do Gerente, quem já podia aprovar; acima, só o Administrativo; acima do valor de dupla aprovação,
+   * duas pessoas diferentes (uma Administrativo). Cada aprovação fica registrada; a conta só vira "aprovada" quando o conjunto basta.
+   */
   async aprovar(a: Acesso, id: string) {
     return this.db.tenant(contextoDb(a), async (c) => {
       const t = await this.lerTitulo(c, id, true);
       await this.exigirAprovador(c, a, t.empresaId, t.criadoPorId);
       if (t.status !== 'PENDENTE') throw new ConflictException('Esta conta não está aguardando aprovação.');
-      await c.query(`UPDATE titulo_pagar SET status = 'APROVADO', aprovado_por = $2, aprovado_em = now() WHERE id = $1`, [id, a.usuarioId]);
-      await auditar(c, a, { acao: 'pagar.aprovado', entidade: 'titulo_pagar', entidadeId: id, empresaId: t.empresaId, depois: { valorCentavos: t.valorCentavos, favorecido: t.favorecido, vencimento: t.vencimento } });
-      return this.lerTitulo(c, id);
+      const perfil = perfilEm(a, t.empresaId)!;
+      const regras = await this.regrasAprovacao(c, t.empresaId);
+      const req = requisitosDeAprovacao(t.valorCentavos, regras);
+      if (req.somenteAdministrativo && perfil !== 'ADMINISTRATIVO') throw new ForbiddenException(`Contas acima de ${formatarBRL(regras.aprovacaoLimiteGerenteCentavos!)} só o Administrativo aprova.`);
+      if ((await c.query('SELECT 1 FROM aprovacao_pagar WHERE titulo_id = $1 AND usuario_id = $2 AND valida', [id, a.usuarioId])).rows[0]) throw new ConflictException('Você já aprovou esta conta. Falta a aprovação de outra pessoa.');
+      await c.query('INSERT INTO aprovacao_pagar (grupo_id, empresa_id, titulo_id, usuario_id, perfil) VALUES ($1,$2,$3,$4,$5)', [a.grupoId, t.empresaId, id, a.usuarioId, perfil]);
+      const dadas = (await c.query('SELECT perfil FROM aprovacao_pagar WHERE titulo_id = $1 AND valida', [id])).rows.map((r) => r.perfil as string);
+      const basta = dadas.length >= req.aprovacoes && (!req.exigeAdministrativo || dadas.includes('ADMINISTRATIVO'));
+      const base = { valorCentavos: t.valorCentavos, favorecido: t.favorecido, vencimento: t.vencimento, aprovacoes: dadas.length, necessarias: req.aprovacoes };
+      if (basta) {
+        await c.query(`UPDATE titulo_pagar SET status = 'APROVADO', aprovado_por = $2, aprovado_em = now() WHERE id = $1`, [id, a.usuarioId]);
+        await auditar(c, a, { acao: 'pagar.aprovado', entidade: 'titulo_pagar', entidadeId: id, empresaId: t.empresaId, depois: base });
+      } else {
+        await auditar(c, a, { acao: 'pagar.aprovacao_parcial', entidade: 'titulo_pagar', entidadeId: id, empresaId: t.empresaId, depois: { ...base, falta: req.exigeAdministrativo && !dadas.includes('ADMINISTRATIVO') ? 'aprovação do Administrativo' : 'mais uma aprovação' } });
+      }
+      return { ...(await this.lerTitulo(c, id)), aprovacoesDadas: dadas.length, aprovacoesNecessarias: req.aprovacoes };
     });
   }
 
@@ -279,7 +303,9 @@ export class PagarService {
            FROM pagamento_pagar p JOIN conta_financeira cf ON cf.id = p.conta_id LEFT JOIN usuario u ON u.id = p.criado_por WHERE p.titulo_id = $1 ORDER BY p.criado_em`, [id])).rows;
       const anexo = t.anexoId ? (await c.query('SELECT id, nome, mime, tamanho_bytes AS tamanho FROM anexo WHERE id = $1', [t.anexoId])).rows[0] : null;
       const custos = t.origem === 'CUSTO_LAUDO' ? (await c.query(`SELECT count(*)::int AS laudos, min(l.data_laudo)::text AS de, max(l.data_laudo)::text AS ate FROM laudo_custo lc JOIN laudo l ON l.id = lc.laudo_id WHERE lc.titulo_pagar_id = $1`, [id])).rows[0] : null;
-      return { ...t, saldoCentavos: t.valorCentavos - t.pagoCentavos, pagamentos, anexo, custos };
+      const aprovacoes = (await c.query(`SELECT u.nome AS usuario, ap.perfil, ap.criado_em AS "criadoEm" FROM aprovacao_pagar ap JOIN usuario u ON u.id = ap.usuario_id WHERE ap.titulo_id = $1 AND ap.valida ORDER BY ap.criado_em`, [id])).rows;
+      const requisitos = requisitosDeAprovacao(t.valorCentavos, await this.regrasAprovacao(c, t.empresaId));
+      return { ...t, saldoCentavos: t.valorCentavos - t.pagoCentavos, pagamentos, anexo, custos, aprovacoes, requisitos };
     });
   }
 
