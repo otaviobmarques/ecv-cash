@@ -7,7 +7,7 @@ import { hojeSP } from '../caixa/razao';
 import { gerarDre, gerarFluxo } from './demonstracoes';
 
 export interface Relatorio { id: string; titulo: string; de?: string; ate?: string; colunas: ColunaRelatorio[]; linhas: Record<string, unknown>[]; totais: Record<string, unknown> | null }
-export interface ParamsRelatorio { de?: string; ate?: string; agrupar?: string; dias?: number }
+export interface ParamsRelatorio { de?: string; ate?: string; agrupar?: string; dias?: number; escopo?: 'loja' | 'rede'; eliminar?: boolean }
 
 const col = (chave: string, rotulo: string, tipo: ColunaRelatorio['tipo'] = 'texto'): ColunaRelatorio => ({ chave, rotulo, tipo });
 const somar = (linhas: Record<string, unknown>[], chaves: string[]) => Object.fromEntries(chaves.map((k) => [k, linhas.reduce((s, l) => s + Number(l[k] ?? 0), 0)]));
@@ -33,6 +33,11 @@ export class RelatoriosService {
     return RELATORIOS.filter((r) => temPermissao(perfil, r.permissao) || (r.id === 'dre' && veDre)).map((r) => ({ id: r.id, titulo: r.titulo, agrupar: r.agrupar }));
   }
 
+  /** A loja ativa, ou todas as lojas do grupo na visão consolidada. */
+  private async lojas(c: import('pg').PoolClient, empresaId: string, rede: boolean): Promise<string[]> {
+    return rede ? (await c.query('SELECT id FROM empresa')).rows.map((r) => r.id as string) : [empresaId];
+  }
+
   /** O Financeiro só vê o DRE se o Administrativo liberou nas regras da loja. */
   private async financeiroVeDre(a: Acesso, empresaId: string): Promise<boolean> {
     return this.db.tenant(contextoDb(a), async (c) => (await c.query('SELECT financeiro_ve_dre AS v FROM empresa_config WHERE empresa_id = $1', [empresaId])).rows[0]?.v ?? false);
@@ -50,16 +55,19 @@ export class RelatoriosService {
     if (def.id === 'dre' && perfilEm(a, empresaId) === 'FINANCEIRO') { if (!(await this.financeiroVeDre(a, empresaId))) throw new ForbiddenException('O DRE não está liberado para o Financeiro desta loja. Peça ao Administrativo.'); }
     else exigir(a, def.permissao, empresaId);
     const hoje = hojeSP();
+    const rede = p.escopo === 'rede';
+    if (rede && (!a.rede || (id !== 'dre' && id !== 'fluxo-caixa'))) throw new ForbiddenException(a.rede ? 'O consolidado da rede vale para o DRE e o fluxo de caixa.' : 'O consolidado da rede é só para quem acessa todas as lojas (Administrativo).');
+    const eliminar = rede && p.eliminar !== false;
     const ate = p.ate ?? hoje; const de = p.de ?? `${ate.slice(0, 8)}01`;
-    if (id === 'fluxo-caixa' && (p.agrupar ?? 'realizado') === 'projetado') return this.db.tenant(contextoDb(a), (c) => gerarFluxo(c, empresaId, hoje, hoje, 'projetado', hoje, Math.min(Math.max(p.dias ?? 60, 7), 180)));
+    if (id === 'fluxo-caixa' && (p.agrupar ?? 'realizado') === 'projetado') return this.db.tenant(contextoDb(a), async (c) => gerarFluxo(c, await this.lojas(c, empresaId, rede), hoje, hoje, 'projetado', hoje, Math.min(Math.max(p.dias ?? 60, 7), 180), eliminar));
     if (de > ate) throw new UnprocessableEntityException({ mensagem: 'O início do período não pode ser depois do fim.', campos: { de: 'Confira as datas.' } });
     if (Date.parse(ate) - Date.parse(de) > 400 * 86_400_000) throw new UnprocessableEntityException({ mensagem: 'Escolha um período de até 13 meses.', campos: { de: 'Período longo demais.' } });
     const agrupar = p.agrupar ?? def.agrupar[0];
     if (def.agrupar.length && !(def.agrupar as readonly string[]).includes(agrupar ?? '')) throw new UnprocessableEntityException({ mensagem: 'Agrupamento inválido para este relatório.', campos: { agrupar: 'Escolha uma das opções.' } });
     return this.db.tenant(contextoDb(a), async (c) => {
       const q = async (sql: string, params: unknown[]) => (await c.query(sql, params)).rows as Record<string, unknown>[];
-      if (id === 'dre') return gerarDre(c, empresaId, de, ate, (agrupar as 'competencia' | 'caixa') ?? 'competencia');
-      if (id === 'fluxo-caixa') return gerarFluxo(c, empresaId, de, ate, 'realizado', hoje, 0);
+      if (id === 'dre') { const r = await gerarDre(c, await this.lojas(c, empresaId, rede), de, ate, (agrupar as 'competencia' | 'caixa') ?? 'competencia', eliminar); return rede ? { ...r, titulo: `${r.titulo}, consolidado da rede${eliminar ? ' (sem o movimento entre empresas do grupo)' : ''}` } : r; }
+      if (id === 'fluxo-caixa') { const r = await gerarFluxo(c, await this.lojas(c, empresaId, rede), de, ate, 'realizado', hoje, 0, eliminar); return rede ? { ...r, titulo: `${r.titulo}, consolidado da rede` } : r; }
       if (id === 'laudos') {
         const dim: Record<string, [string, string, ColunaRelatorio['tipo']]> = {
           dia: ['l.data_laudo::text', 'Data', 'data'], cliente: ['cl.nome', 'Cliente', 'texto'], servico: ['s.nome', 'Serviço', 'texto'], vistoriador: ['v.nome', 'Vistoriador', 'texto'], forma: ['fp.nome', 'Forma de pagamento', 'texto'],

@@ -15,10 +15,12 @@ export function Relatorios() {
   const { eu } = useOutletContext<{ eu: Eu }>();
   const cat = useQuery({ queryKey: ['relatorios', 'catalogo', eu.empresaAtivaId], enabled: !!eu.empresaAtivaId, queryFn: () => api.get<RelatorioDef[]>('/relatorios') });
   const [id, setId] = useState(''); const [agrupar, setAgrupar] = useState('');
-  const [de, setDe] = useState(hojeIso().slice(0, 8) + '01'); const [ate, setAte] = useState(hojeIso()); const [dias, setDias] = useState('60');
+  const [de, setDe] = useState(hojeIso().slice(0, 8) + '01'); const [ate, setAte] = useState(hojeIso()); const [dias, setDias] = useState('60'); const [rede, setRede] = useState(false); const [eliminar, setEliminar] = useState(true);
   const def = cat.data?.find((r) => r.id === (id || cat.data?.[0]?.id));
   const ag = def?.agrupar.includes(agrupar) ? agrupar : def?.agrupar[0] ?? '';
   const qs = new URLSearchParams({ de, ate }); if (ag) qs.set('agrupar', ag); if (def?.id === 'fluxo-caixa' && ag === 'projetado') qs.set('dias', dias);
+  const podeRede = eu.rede && (def?.id === 'dre' || def?.id === 'fluxo-caixa');
+  if (podeRede && rede) { qs.set('escopo', 'rede'); if (!eliminar) qs.set('eliminar', '0'); }
   const semDatas = def?.id === 'inadimplencia' || (def?.id === 'fluxo-caixa' && ag === 'projetado');
   const r = useQuery({ queryKey: ['relatorios', def?.id, qs.toString(), eu.empresaAtivaId], enabled: !!def, queryFn: () => api.get<RelatorioResposta>(`/relatorios/${def!.id}?${qs}`) });
   if (!eu.empresaAtivaId) return <Aviso tipo="aviso">Escolha a empresa em que está trabalhando, no alto da tela.</Aviso>;
@@ -33,6 +35,8 @@ export function Relatorios() {
               {def && def.agrupar.length > 0 && <Selecao rotulo="Agrupar por" value={ag} onChange={(e) => setAgrupar(e.target.value)}>{def.agrupar.map((k) => <option key={k} value={k}>{ROTULO_AGRUPAR[k]}</option>)}</Selecao>}
               {def?.id === 'fluxo-caixa' && ag === 'projetado' && <Selecao rotulo="Olhar para frente" value={dias} onChange={(e) => setDias(e.target.value)}>{['30', '60', '90', '180'].map((d) => <option key={d} value={d}>{d} dias</option>)}</Selecao>}
               {!semDatas && <><Campo rotulo="De" type="date" value={de} onChange={(e) => setDe(e.target.value)} /><Campo rotulo="Até" type="date" max={hojeIso()} value={ate} onChange={(e) => setAte(e.target.value)} /></>}
+              {podeRede && <label className="check" style={{ alignSelf: 'center' }}><input type="checkbox" checked={rede} onChange={(e) => setRede(e.target.checked)} />Consolidado da rede (todas as lojas)</label>}
+              {podeRede && rede && <label className="check" style={{ alignSelf: 'center' }}><input type="checkbox" checked={eliminar} onChange={(e) => setEliminar(e.target.checked)} />Tirar o movimento entre empresas do grupo</label>}
               {eu.permissoes.includes('exportar') && def && <a className="btn sec" href={`${API_BASE}/relatorios/${def.id}?${qs}&formato=csv`} target="_blank" rel="noreferrer">Exportar planilha (CSV)</a>}
             </div>
           </div>

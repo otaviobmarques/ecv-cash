@@ -8,7 +8,7 @@ import { AcessoAtual } from '../common/decorators';
 import { validar } from '../common/zod';
 import { dataIso } from '@ecv/shared';
 
-const params = z.object({ de: dataIso.optional(), ate: dataIso.optional(), agrupar: z.string().max(20).optional(), dias: z.coerce.number().int().min(7).max(180).optional(), formato: z.enum(['json', 'csv']).default('json') });
+const params = z.object({ de: dataIso.optional(), ate: dataIso.optional(), agrupar: z.string().max(20).optional(), dias: z.coerce.number().int().min(7).max(180).optional(), escopo: z.enum(['loja', 'rede']).optional(), eliminar: z.enum(['0', '1']).optional(), formato: z.enum(['json', 'csv']).default('json') });
 
 @Controller()
 export class RelatoriosController {
@@ -19,7 +19,8 @@ export class RelatoriosController {
 
   @Get('relatorios/:id')
   async relatorio(@AcessoAtual() a: Acesso, @Param('id') id: string, @Query() q: unknown, @Res({ passthrough: true }) res: Response) {
-    const { formato, ...p } = validar(params, q);
+    const { formato, eliminar, ...resto } = validar(params, q);
+    const p = { ...resto, eliminar: eliminar === undefined ? undefined : eliminar === '1' };
     if (formato === 'csv') {
       const { nome, csv } = await this.svc.exportarCsv(a, id, p);
       res.setHeader('Content-Type', 'text/csv; charset=utf-8'); res.setHeader('Content-Disposition', `attachment; filename="${nome}"`); res.setHeader('Cache-Control', 'no-store');

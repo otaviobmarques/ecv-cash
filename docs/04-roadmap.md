@@ -22,8 +22,12 @@
 - [x] E-mail de cobrança: fatura em PDF ao gerar, lembrete antes do vencimento e avisos de atraso, registro de cada envio. Precisa de servidor SMTP configurado (variáveis `SMTP_*`).
 - Custos diretos por serviço com vigência: hoje cada laudo guarda os custos do dia do lançamento; a vigência do custo no cadastro fica para depois.
 
-## Fase 3: rede e contábil
-Consolidado da rede com eliminação de intercompany, balanço gerencial, aprovação de pagamentos em níveis, importação por planilha, LGPD avançada (prazos de retenção automáticos), logotipo da empresa nos PDFs (depende do armazenamento S3).
+## Fase 3: rede e contábil (em andamento)
+- [x] Consolidado da rede: DRE (competência e caixa) e fluxo de caixa de todas as lojas, com eliminação do movimento entre empresas do grupo. O Administrativo marca, em Cadastros > Empresas do grupo, quais clientes e fornecedores são lojas da própria rede.
+- [ ] Balanço gerencial (saldos manuais por conta do plano, sem partida dobrada).
+- [ ] Importação por planilha (clientes, preços, fornecedores).
+- [ ] Aprovação de pagamentos em níveis (por faixa de valor).
+- [ ] LGPD avançada (prazos de retenção) e logotipo da empresa nos PDFs (depende do armazenamento S3).
 
 ## Fase 4: futuro
 NFS-e e boleto, importação ou API de laudos, conciliação OFX, app mobile, cobrança de assinatura do SaaS.

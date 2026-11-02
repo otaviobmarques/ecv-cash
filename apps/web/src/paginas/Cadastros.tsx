@@ -6,6 +6,7 @@ import { Formas } from './cad/Formas';
 import { Contas } from './cad/Contas';
 import { PlanoContas } from './cad/PlanoContas';
 import { Aliquotas } from './cad/Aliquotas';
+import { Vinculos } from './cad/Vinculos';
 
 const ABAS = [
   { id: 'servicos', rotulo: 'Serviços', perm: 'servico.ver' },
@@ -14,6 +15,7 @@ const ABAS = [
   { id: 'contas', rotulo: 'Contas bancárias', perm: 'conta_financeira.ver' },
   { id: 'plano', rotulo: 'Plano de contas', perm: 'plano_contas.ver' },
   { id: 'impostos', rotulo: 'Impostos', perm: 'aliquota.ver' },
+  { id: 'grupo', rotulo: 'Empresas do grupo', perm: 'empresa.criar' },
 ] as const;
 
 export function Cadastros() {
@@ -36,6 +38,7 @@ export function Cadastros() {
       {atual === 'contas' && <Contas />}
       {atual === 'plano' && <PlanoContas />}
       {atual === 'impostos' && <Aliquotas />}
+      {atual === 'grupo' && <Vinculos />}
     </div>
   );
 }

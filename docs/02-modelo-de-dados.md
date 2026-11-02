@@ -43,8 +43,10 @@ aprovação de contas a pagar, Financeiro vê DRE). Laudo com baixa ou fatura fi
 
 **Cobrança (0014).** `regua_cobranca` (por loja, desligada por padrão) e `envio_email` (cada envio ou tentativa, com status; o índice único impede o mesmo aviso automático duas vezes para a mesma fatura).
 
+**Consolidado (0015).** `cliente.empresa_vinculada_id` e `fornecedor.empresa_vinculada_id` dizem que aquele cliente ou fornecedor é outra loja do grupo; a função `lancamento_intercompany` reconhece o dinheiro que veio ou foi para elas. A eliminação é calculada na hora, em cada relatório consolidado.
+
 ## Ainda não existe
-Balanço gerencial (`saldo_patrimonial_manual`), consolidado da rede com eliminação de intercompany, aprovação de pagamentos em múltiplos níveis, importação por planilha, `solicitacao_titular` (hoje o pedido do titular é atendido por tela e fica na auditoria).
+Balanço gerencial (`saldo_patrimonial_manual`), aprovação de pagamentos em múltiplos níveis, importação por planilha, `solicitacao_titular` (hoje o pedido do titular é atendido por tela e fica na auditoria).
 
 ## Estados
 Laudo: ativo, cancelado. Título a receber: aberto, parcial, quitado, cancelado ("vencido" é derivado). Fatura: aberta, parcial, paga, cancelada.
