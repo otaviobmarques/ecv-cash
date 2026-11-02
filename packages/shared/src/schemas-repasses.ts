@@ -37,3 +37,10 @@ export const aliquotaSchema = z.object({
 });
 export const editarAliquotaSchema = z.object({ ativa: z.boolean().optional(), vigenciaFim: z.union([dataIso, z.null()]).optional() });
 export const ROTULO_IMPOSTO = { ISS: 'ISS', PIS: 'PIS', COFINS: 'COFINS', SIMPLES_NACIONAL: 'Simples Nacional', OUTRO: 'Outro' } as const;
+
+export const saldoManualSchema = z.object({
+  planoContaId: z.string().uuid('Escolha a conta do plano.'),
+  dataBase: dataIso,
+  valorCentavos: z.number().int('Use centavos inteiros.').min(0, 'Informe o valor sem sinal: o tipo da conta já diz se é ativo ou passivo.').max(100_000_000_000_00),
+  observacao: vazio(z.string().trim().max(300).optional()),
+});

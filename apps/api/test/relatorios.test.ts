@@ -51,7 +51,7 @@ describe('relatórios, painel e LGPD', () => {
 
   describe('catálogo e permissões', () => {
     it('cada perfil vê os relatórios a que tem direito; Vistoriador, nenhum', async () => {
-      expect((await ger.get('/relatorios')).body.map((r: { id: string }) => r.id)).toEqual(['laudos', 'recebimentos', 'inadimplencia', 'pagamentos', 'fluxo-caixa', 'dre']);
+      expect((await ger.get('/relatorios')).body.map((r: { id: string }) => r.id)).toEqual(['laudos', 'recebimentos', 'inadimplencia', 'pagamentos', 'fluxo-caixa', 'dre', 'balanco']);
       expect((await fin.get('/relatorios')).body.map((r: { id: string }) => r.id)).toEqual(['laudos', 'recebimentos', 'inadimplencia', 'pagamentos', 'fluxo-caixa']); // DRE só se liberado
       expect((await vis.get('/relatorios')).body).toEqual([]);
       expect((await rel(vis, 'laudos')).status).toBe(403);

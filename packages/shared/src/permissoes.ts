@@ -98,6 +98,7 @@ export const MATRIZ = {
   'relatorio.financeiro': [A, G, F],
   'relatorio.fluxo_caixa': [A, G, F],
   'relatorio.dre_balanco': [A, G],
+  'balanco.editar': [A], // saldos informados à mão (imobilizado, empréstimos, capital)
   'relatorio.margem': [A, G],
   'relatorio.consolidado': [A, G, F],
   'dashboard.rede': [A],

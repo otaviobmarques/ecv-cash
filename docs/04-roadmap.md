@@ -24,7 +24,7 @@
 
 ## Fase 3: rede e contábil (em andamento)
 - [x] Consolidado da rede: DRE (competência e caixa) e fluxo de caixa de todas as lojas, com eliminação do movimento entre empresas do grupo. O Administrativo marca, em Cadastros > Empresas do grupo, quais clientes e fornecedores são lojas da própria rede.
-- [ ] Balanço gerencial (saldos manuais por conta do plano, sem partida dobrada).
+- [x] Balanço gerencial: caixa, a receber, cartões, cheques e a pagar vêm do sistema; imobilizado, empréstimos e capital são informados à mão por data-base; o patrimônio líquido fecha a conta. Vale por loja ou consolidado.
 - [ ] Importação por planilha (clientes, preços, fornecedores).
 - [ ] Aprovação de pagamentos em níveis (por faixa de valor).
 - [ ] LGPD avançada (prazos de retenção) e logotipo da empresa nos PDFs (depende do armazenamento S3).

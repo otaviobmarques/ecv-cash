@@ -5,6 +5,7 @@ import { Acesso, contextoDb, exigir, perfilEm } from '../common/acesso';
 import { auditar } from '../common/auditoria';
 import { hojeSP } from '../caixa/razao';
 import { gerarDre, gerarFluxo } from './demonstracoes';
+import { gerarBalanco } from './balanco';
 
 export interface Relatorio { id: string; titulo: string; de?: string; ate?: string; colunas: ColunaRelatorio[]; linhas: Record<string, unknown>[]; totais: Record<string, unknown> | null }
 export interface ParamsRelatorio { de?: string; ate?: string; agrupar?: string; dias?: number; escopo?: 'loja' | 'rede'; eliminar?: boolean }
@@ -19,6 +20,7 @@ export const RELATORIOS = [
   { id: 'pagamentos', titulo: 'Pagamentos por período', permissao: 'relatorio.financeiro', agrupar: ['dia', 'fornecedor', 'conta', 'plano'] },
   { id: 'fluxo-caixa', titulo: 'Fluxo de caixa', permissao: 'relatorio.fluxo_caixa', agrupar: ['realizado', 'projetado'] },
   { id: 'dre', titulo: 'DRE (resultado do período)', permissao: 'relatorio.dre_balanco', agrupar: ['competencia', 'caixa'] },
+  { id: 'balanco', titulo: 'Balanço gerencial', permissao: 'relatorio.dre_balanco', agrupar: [] },
 ] as const;
 
 @Injectable()
@@ -30,7 +32,7 @@ export class RelatoriosService {
     const perfil = perfilEm(a, a.empresaAtivaId);
     if (!perfil || !a.empresaAtivaId) return [];
     const veDre = perfil === 'FINANCEIRO' ? await this.financeiroVeDre(a, a.empresaAtivaId) : false;
-    return RELATORIOS.filter((r) => temPermissao(perfil, r.permissao) || (r.id === 'dre' && veDre)).map((r) => ({ id: r.id, titulo: r.titulo, agrupar: r.agrupar }));
+    return RELATORIOS.filter((r) => temPermissao(perfil, r.permissao) || ((r.id === 'dre' || r.id === 'balanco') && veDre)).map((r) => ({ id: r.id, titulo: r.titulo, agrupar: r.agrupar }));
   }
 
   /** A loja ativa, ou todas as lojas do grupo na visão consolidada. */
@@ -52,13 +54,17 @@ export class RelatoriosService {
     const def = RELATORIOS.find((r) => r.id === id);
     if (!def) throw new NotFoundException('Relatório não encontrado.');
     const empresaId = this.empresaAtiva(a);
-    if (def.id === 'dre' && perfilEm(a, empresaId) === 'FINANCEIRO') { if (!(await this.financeiroVeDre(a, empresaId))) throw new ForbiddenException('O DRE não está liberado para o Financeiro desta loja. Peça ao Administrativo.'); }
+    if ((def.id === 'dre' || def.id === 'balanco') && perfilEm(a, empresaId) === 'FINANCEIRO') { if (!(await this.financeiroVeDre(a, empresaId))) throw new ForbiddenException('O DRE não está liberado para o Financeiro desta loja. Peça ao Administrativo.'); }
     else exigir(a, def.permissao, empresaId);
     const hoje = hojeSP();
     const rede = p.escopo === 'rede';
-    if (rede && (!a.rede || (id !== 'dre' && id !== 'fluxo-caixa'))) throw new ForbiddenException(a.rede ? 'O consolidado da rede vale para o DRE e o fluxo de caixa.' : 'O consolidado da rede é só para quem acessa todas as lojas (Administrativo).');
+    if (rede && (!a.rede || (id !== 'dre' && id !== 'fluxo-caixa' && id !== 'balanco'))) throw new ForbiddenException(a.rede ? 'O consolidado da rede vale para o DRE, o balanço e o fluxo de caixa.' : 'O consolidado da rede é só para quem acessa todas as lojas (Administrativo).');
     const eliminar = rede && p.eliminar !== false;
     const ate = p.ate ?? hoje; const de = p.de ?? `${ate.slice(0, 8)}01`;
+    if (id === 'balanco') {
+      if (ate > hoje) throw new UnprocessableEntityException({ mensagem: 'O balanço é de uma data que já passou (ou hoje).', campos: { ate: 'Escolha uma data até hoje.' } });
+      return this.db.tenant(contextoDb(a), async (c) => { const r = await gerarBalanco(c, await this.lojas(c, empresaId, rede), ate, eliminar); return rede ? { ...r, titulo: `${r.titulo}, consolidado da rede${eliminar ? ' (sem o movimento entre empresas do grupo)' : ''}` } : r; });
+    }
     if (id === 'fluxo-caixa' && (p.agrupar ?? 'realizado') === 'projetado') return this.db.tenant(contextoDb(a), async (c) => gerarFluxo(c, await this.lojas(c, empresaId, rede), hoje, hoje, 'projetado', hoje, Math.min(Math.max(p.dias ?? 60, 7), 180), eliminar));
     if (de > ate) throw new UnprocessableEntityException({ mensagem: 'O início do período não pode ser depois do fim.', campos: { de: 'Confira as datas.' } });
     if (Date.parse(ate) - Date.parse(de) > 400 * 86_400_000) throw new UnprocessableEntityException({ mensagem: 'Escolha um período de até 13 meses.', campos: { de: 'Período longo demais.' } });
