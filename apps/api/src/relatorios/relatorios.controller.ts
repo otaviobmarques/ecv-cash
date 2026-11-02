@@ -8,7 +8,7 @@ import { AcessoAtual } from '../common/decorators';
 import { validar } from '../common/zod';
 import { dataIso } from '@ecv/shared';
 
-const params = z.object({ de: dataIso.optional(), ate: dataIso.optional(), agrupar: z.string().max(20).optional(), formato: z.enum(['json', 'csv']).default('json') });
+const params = z.object({ de: dataIso.optional(), ate: dataIso.optional(), agrupar: z.string().max(20).optional(), dias: z.coerce.number().int().min(7).max(180).optional(), formato: z.enum(['json', 'csv']).default('json') });
 
 @Controller()
 export class RelatoriosController {

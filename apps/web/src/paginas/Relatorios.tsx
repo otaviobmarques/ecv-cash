@@ -7,17 +7,19 @@ import { API_BASE, api } from '../api';
 import { dataBr, hojeIso, mensagemDoErro } from '../formulario';
 import type { Eu, RelatorioDef, RelatorioResposta } from '../tipos';
 
-const ROTULO_AGRUPAR: Record<string, string> = { dia: 'Dia', cliente: 'Cliente', servico: 'Serviço', vistoriador: 'Vistoriador', forma: 'Forma de pagamento', conta: 'Conta', fornecedor: 'Favorecido', plano: 'Conta do plano' };
+const ROTULO_AGRUPAR: Record<string, string> = { dia: 'Dia', cliente: 'Cliente', servico: 'Serviço', vistoriador: 'Vistoriador', forma: 'Forma de pagamento', conta: 'Conta', fornecedor: 'Favorecido', plano: 'Conta do plano', competencia: 'Por competência (quando o laudo foi feito)', caixa: 'Por caixa (quando o dinheiro entrou e saiu)', realizado: 'Realizado (já aconteceu)', projetado: 'Projetado (o que está previsto)' };
 const celula = (v: unknown, tipo: string) => (v === null || v === undefined ? '' : tipo === 'dinheiro' ? formatarBRL(Number(v)) : tipo === 'data' ? dataBr(String(v)) : String(v));
+const estiloLinha = (l: Record<string, unknown>) => ({ fontWeight: l._negrito ? 700 : undefined, background: l._negrito ? 'var(--suave)' : undefined, color: l._alerta ? 'var(--erro)' : undefined });
 
 export function Relatorios() {
   const { eu } = useOutletContext<{ eu: Eu }>();
   const cat = useQuery({ queryKey: ['relatorios', 'catalogo', eu.empresaAtivaId], enabled: !!eu.empresaAtivaId, queryFn: () => api.get<RelatorioDef[]>('/relatorios') });
   const [id, setId] = useState(''); const [agrupar, setAgrupar] = useState('');
-  const [de, setDe] = useState(hojeIso().slice(0, 8) + '01'); const [ate, setAte] = useState(hojeIso());
+  const [de, setDe] = useState(hojeIso().slice(0, 8) + '01'); const [ate, setAte] = useState(hojeIso()); const [dias, setDias] = useState('60');
   const def = cat.data?.find((r) => r.id === (id || cat.data?.[0]?.id));
   const ag = def?.agrupar.includes(agrupar) ? agrupar : def?.agrupar[0] ?? '';
-  const qs = new URLSearchParams({ de, ate }); if (ag) qs.set('agrupar', ag);
+  const qs = new URLSearchParams({ de, ate }); if (ag) qs.set('agrupar', ag); if (def?.id === 'fluxo-caixa' && ag === 'projetado') qs.set('dias', dias);
+  const semDatas = def?.id === 'inadimplencia' || (def?.id === 'fluxo-caixa' && ag === 'projetado');
   const r = useQuery({ queryKey: ['relatorios', def?.id, qs.toString(), eu.empresaAtivaId], enabled: !!def, queryFn: () => api.get<RelatorioResposta>(`/relatorios/${def!.id}?${qs}`) });
   if (!eu.empresaAtivaId) return <Aviso tipo="aviso">Escolha a empresa em que está trabalhando, no alto da tela.</Aviso>;
   return (
@@ -29,7 +31,8 @@ export function Relatorios() {
             <div className="linha">
               <Selecao rotulo="Relatório" value={def?.id ?? ''} onChange={(e) => { setId(e.target.value); setAgrupar(''); }}>{cat.data.map((x) => <option key={x.id} value={x.id}>{x.titulo}</option>)}</Selecao>
               {def && def.agrupar.length > 0 && <Selecao rotulo="Agrupar por" value={ag} onChange={(e) => setAgrupar(e.target.value)}>{def.agrupar.map((k) => <option key={k} value={k}>{ROTULO_AGRUPAR[k]}</option>)}</Selecao>}
-              {def?.id !== 'inadimplencia' && <><Campo rotulo="De" type="date" value={de} onChange={(e) => setDe(e.target.value)} /><Campo rotulo="Até" type="date" max={hojeIso()} value={ate} onChange={(e) => setAte(e.target.value)} /></>}
+              {def?.id === 'fluxo-caixa' && ag === 'projetado' && <Selecao rotulo="Olhar para frente" value={dias} onChange={(e) => setDias(e.target.value)}>{['30', '60', '90', '180'].map((d) => <option key={d} value={d}>{d} dias</option>)}</Selecao>}
+              {!semDatas && <><Campo rotulo="De" type="date" value={de} onChange={(e) => setDe(e.target.value)} /><Campo rotulo="Até" type="date" max={hojeIso()} value={ate} onChange={(e) => setAte(e.target.value)} /></>}
               {eu.permissoes.includes('exportar') && def && <a className="btn sec" href={`${API_BASE}/relatorios/${def.id}?${qs}&formato=csv`} target="_blank" rel="noreferrer">Exportar planilha (CSV)</a>}
             </div>
           </div>
@@ -40,7 +43,7 @@ export function Relatorios() {
                 <div className="tw"><table>
                   <thead><tr>{r.data.colunas.map((c) => <th key={c.chave} className={c.tipo === 'texto' || c.tipo === 'data' ? '' : 'num'}>{c.rotulo}</th>)}</tr></thead>
                   <tbody>
-                    {r.data.linhas.map((l, i) => <tr key={i}>{r.data!.colunas.map((c) => <td key={c.chave} className={c.tipo === 'texto' || c.tipo === 'data' ? '' : 'num'}>{celula(l[c.chave], c.tipo)}</td>)}</tr>)}
+                    {r.data.linhas.map((l, i) => <tr key={i} style={estiloLinha(l)}>{r.data!.colunas.map((c, ci) => <td key={c.chave} className={c.tipo === 'texto' || c.tipo === 'data' ? '' : 'num'} style={ci === 0 && l._sub ? { paddingLeft: 28, color: 'var(--texto-2)' } : undefined}>{celula(l[c.chave], c.tipo)}</td>)}</tr>)}
                     {r.data.linhas.length === 0 && <tr><td colSpan={r.data.colunas.length} className="vazio">Nada neste período.</td></tr>}
                     {r.data.totais && r.data.linhas.length > 0 && <tr style={{ fontWeight: 700, background: 'var(--suave)' }}>{r.data.colunas.map((c, i) => <td key={c.chave} className={c.tipo === 'texto' || c.tipo === 'data' ? '' : 'num'}>{i === 0 ? 'Total' : celula(r.data!.totais![c.chave], c.tipo)}</td>)}</tr>}
                   </tbody>

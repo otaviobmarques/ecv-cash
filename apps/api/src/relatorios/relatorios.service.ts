@@ -4,9 +4,10 @@ import { DbService } from '../db/db.service';
 import { Acesso, contextoDb, exigir, perfilEm } from '../common/acesso';
 import { auditar } from '../common/auditoria';
 import { hojeSP } from '../caixa/razao';
+import { gerarDre, gerarFluxo } from './demonstracoes';
 
 export interface Relatorio { id: string; titulo: string; de?: string; ate?: string; colunas: ColunaRelatorio[]; linhas: Record<string, unknown>[]; totais: Record<string, unknown> | null }
-export interface ParamsRelatorio { de?: string; ate?: string; agrupar?: string }
+export interface ParamsRelatorio { de?: string; ate?: string; agrupar?: string; dias?: number }
 
 const col = (chave: string, rotulo: string, tipo: ColunaRelatorio['tipo'] = 'texto'): ColunaRelatorio => ({ chave, rotulo, tipo });
 const somar = (linhas: Record<string, unknown>[], chaves: string[]) => Object.fromEntries(chaves.map((k) => [k, linhas.reduce((s, l) => s + Number(l[k] ?? 0), 0)]));
@@ -16,6 +17,8 @@ export const RELATORIOS = [
   { id: 'recebimentos', titulo: 'Recebimentos por período', permissao: 'relatorio.financeiro', agrupar: ['dia', 'forma', 'conta', 'cliente'] },
   { id: 'inadimplencia', titulo: 'Inadimplência por cliente (idade dos títulos)', permissao: 'relatorio.financeiro', agrupar: [] },
   { id: 'pagamentos', titulo: 'Pagamentos por período', permissao: 'relatorio.financeiro', agrupar: ['dia', 'fornecedor', 'conta', 'plano'] },
+  { id: 'fluxo-caixa', titulo: 'Fluxo de caixa', permissao: 'relatorio.fluxo_caixa', agrupar: ['realizado', 'projetado'] },
+  { id: 'dre', titulo: 'DRE (resultado do período)', permissao: 'relatorio.dre_balanco', agrupar: ['competencia', 'caixa'] },
 ] as const;
 
 @Injectable()
@@ -23,9 +26,16 @@ export class RelatoriosService {
   constructor(private readonly db: DbService) {}
 
   /** Quais relatórios o perfil da loja ativa pode abrir. */
-  catalogo(a: Acesso) {
+  async catalogo(a: Acesso) {
     const perfil = perfilEm(a, a.empresaAtivaId);
-    return RELATORIOS.filter((r) => perfil && temPermissao(perfil, r.permissao)).map((r) => ({ id: r.id, titulo: r.titulo, agrupar: r.agrupar }));
+    if (!perfil || !a.empresaAtivaId) return [];
+    const veDre = perfil === 'FINANCEIRO' ? await this.financeiroVeDre(a, a.empresaAtivaId) : false;
+    return RELATORIOS.filter((r) => temPermissao(perfil, r.permissao) || (r.id === 'dre' && veDre)).map((r) => ({ id: r.id, titulo: r.titulo, agrupar: r.agrupar }));
+  }
+
+  /** O Financeiro só vê o DRE se o Administrativo liberou nas regras da loja. */
+  private async financeiroVeDre(a: Acesso, empresaId: string): Promise<boolean> {
+    return this.db.tenant(contextoDb(a), async (c) => (await c.query('SELECT financeiro_ve_dre AS v FROM empresa_config WHERE empresa_id = $1', [empresaId])).rows[0]?.v ?? false);
   }
 
   private empresaAtiva(a: Acesso): string {
@@ -37,15 +47,19 @@ export class RelatoriosService {
     const def = RELATORIOS.find((r) => r.id === id);
     if (!def) throw new NotFoundException('Relatório não encontrado.');
     const empresaId = this.empresaAtiva(a);
-    exigir(a, def.permissao, empresaId);
+    if (def.id === 'dre' && perfilEm(a, empresaId) === 'FINANCEIRO') { if (!(await this.financeiroVeDre(a, empresaId))) throw new ForbiddenException('O DRE não está liberado para o Financeiro desta loja. Peça ao Administrativo.'); }
+    else exigir(a, def.permissao, empresaId);
     const hoje = hojeSP();
     const ate = p.ate ?? hoje; const de = p.de ?? `${ate.slice(0, 8)}01`;
+    if (id === 'fluxo-caixa' && (p.agrupar ?? 'realizado') === 'projetado') return this.db.tenant(contextoDb(a), (c) => gerarFluxo(c, empresaId, hoje, hoje, 'projetado', hoje, Math.min(Math.max(p.dias ?? 60, 7), 180)));
     if (de > ate) throw new UnprocessableEntityException({ mensagem: 'O início do período não pode ser depois do fim.', campos: { de: 'Confira as datas.' } });
     if (Date.parse(ate) - Date.parse(de) > 400 * 86_400_000) throw new UnprocessableEntityException({ mensagem: 'Escolha um período de até 13 meses.', campos: { de: 'Período longo demais.' } });
     const agrupar = p.agrupar ?? def.agrupar[0];
     if (def.agrupar.length && !(def.agrupar as readonly string[]).includes(agrupar ?? '')) throw new UnprocessableEntityException({ mensagem: 'Agrupamento inválido para este relatório.', campos: { agrupar: 'Escolha uma das opções.' } });
     return this.db.tenant(contextoDb(a), async (c) => {
       const q = async (sql: string, params: unknown[]) => (await c.query(sql, params)).rows as Record<string, unknown>[];
+      if (id === 'dre') return gerarDre(c, empresaId, de, ate, (agrupar as 'competencia' | 'caixa') ?? 'competencia');
+      if (id === 'fluxo-caixa') return gerarFluxo(c, empresaId, de, ate, 'realizado', hoje, 0);
       if (id === 'laudos') {
         const dim: Record<string, [string, string, ColunaRelatorio['tipo']]> = {
           dia: ['l.data_laudo::text', 'Data', 'data'], cliente: ['cl.nome', 'Cliente', 'texto'], servico: ['s.nome', 'Serviço', 'texto'], vistoriador: ['v.nome', 'Vistoriador', 'texto'], forma: ['fp.nome', 'Forma de pagamento', 'texto'],
