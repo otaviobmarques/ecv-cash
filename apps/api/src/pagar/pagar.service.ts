@@ -139,13 +139,13 @@ export class PagarService {
       if ((await c.query('SELECT 1 FROM aprovacao_pagar WHERE titulo_id = $1 AND usuario_id = $2 AND valida', [id, a.usuarioId])).rows[0]) throw new ConflictException('Você já aprovou esta conta. Falta a aprovação de outra pessoa.');
       await c.query('INSERT INTO aprovacao_pagar (grupo_id, empresa_id, titulo_id, usuario_id, perfil) VALUES ($1,$2,$3,$4,$5)', [a.grupoId, t.empresaId, id, a.usuarioId, perfil]);
       const dadas = (await c.query('SELECT perfil FROM aprovacao_pagar WHERE titulo_id = $1 AND valida', [id])).rows.map((r) => r.perfil as string);
-      const basta = dadas.length >= req.aprovacoes && (!req.exigeAdministrativo || dadas.includes('ADMINISTRATIVO'));
+      const basta = dadas.includes('ADMINISTRATIVO') || dadas.length >= req.aprovacoes; // o Administrativo sozinho basta em qualquer faixa
       const base = { valorCentavos: t.valorCentavos, favorecido: t.favorecido, vencimento: t.vencimento, aprovacoes: dadas.length, necessarias: req.aprovacoes };
       if (basta) {
         await c.query(`UPDATE titulo_pagar SET status = 'APROVADO', aprovado_por = $2, aprovado_em = now() WHERE id = $1`, [id, a.usuarioId]);
         await auditar(c, a, { acao: 'pagar.aprovado', entidade: 'titulo_pagar', entidadeId: id, empresaId: t.empresaId, depois: base });
       } else {
-        await auditar(c, a, { acao: 'pagar.aprovacao_parcial', entidade: 'titulo_pagar', entidadeId: id, empresaId: t.empresaId, depois: { ...base, falta: req.exigeAdministrativo && !dadas.includes('ADMINISTRATIVO') ? 'aprovação do Administrativo' : 'mais uma aprovação' } });
+        await auditar(c, a, { acao: 'pagar.aprovacao_parcial', entidade: 'titulo_pagar', entidadeId: id, empresaId: t.empresaId, depois: { ...base, falta: 'mais uma aprovação, ou a do Administrativo' } });
       }
       return { ...(await this.lerTitulo(c, id)), aprovacoesDadas: dadas.length, aprovacoesNecessarias: req.aprovacoes };
     });

@@ -164,7 +164,7 @@ function Detalhe({ id, eu, onFechar, onMudou }: { id: string | null; eu: Eu; onF
           </dl>
           {(t.status === 'PENDENTE' || t.aprovacoes.length > 0) && (
             <Aviso tipo={t.status === 'PENDENTE' ? 'aviso' : 'info'}>
-              {t.requisitos.aprovacoes === 2 ? 'Esta conta precisa de duas aprovações de pessoas diferentes, uma delas do Administrativo.' : t.requisitos.somenteAdministrativo ? 'Pelo valor, só o Administrativo aprova esta conta.' : 'Esta conta precisa de uma aprovação.'}
+              {t.requisitos.aprovacoes === 2 ? 'Pelo valor, esta conta precisa de duas aprovações de pessoas diferentes, ou da aprovação do Administrativo.' : t.requisitos.somenteAdministrativo ? 'Pelo valor, só o Administrativo aprova esta conta.' : 'Esta conta precisa de uma aprovação.'}
               {t.aprovacoes.length > 0 && <> Aprovações até agora: {t.aprovacoes.map((x) => x.usuario).join(', ')}.</>}
             </Aviso>
           )}

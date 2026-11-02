@@ -32,7 +32,7 @@ Idioma: tudo em português do Brasil (código de domínio, mensagens, commits). 
 
 16. **Dinheiro só entra e sai pelo razão** (`caixa/razao.ts`, `registrarLancamento`). Lançamento, baixa e pagamento são imutáveis: erro se corrige com registro contrário e motivo. Dia de caixa fechado e mês fechado são recusados pelo banco.
 17. **Baixa** (`receber/baixa.ts`) é o único caminho para receber: multa e juros do dia sobre a parte paga, perdão com motivo e limite, laudo travado enquanto houver baixa ou fatura. Cartão e cheque não entram no caixa na baixa (só na liquidação e na compensação).
-18. **Contas a pagar**: Gerente e Financeiro não aprovam a conta que criaram; o Administrativo pode tudo, inclusive aprovar a própria (na dupla aprovação ele conta como uma pessoa só). Comissão, royalty, custo de laudo, recorrência e rateio nascem como contas a pagar pelo mesmo caminho (`pagar/titulo-pagar.ts`).
+18. **Contas a pagar**: Gerente e Financeiro não aprovam a conta que criaram; o Administrativo pode tudo, inclusive aprovar a própria (o Administrativo sozinho basta em qualquer faixa de valor; os demais seguem os níveis da loja). Comissão, royalty, custo de laudo, recorrência e rateio nascem como contas a pagar pelo mesmo caminho (`pagar/titulo-pagar.ts`).
 19. **E-mail** só pelo `Mailer`; sem SMTP o envio é registrado como "e-mail não configurado", nunca como enviado. O mesmo aviso automático não sai duas vezes (índice único).
 20. **Migrações novas** seguem a numeração; relatório novo entra em `RELATORIOS` com a permissão certa e, se exporta, passa pela auditoria.
 

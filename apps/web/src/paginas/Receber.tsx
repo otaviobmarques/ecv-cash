@@ -256,7 +256,7 @@ function Regras({ aberto, onFechar }: { aberto: boolean; onFechar: () => void })
           <h3>Aprovação por faixa de valor</h3>
           <p className="mut peq">Deixe em branco para não separar por valor. Quem criou a conta nunca a aprova.</p>
           <CampoDinheiro rotulo="Acima de quanto só o Administrativo aprova (R$)" centavos={f.aprovacaoLimiteGerenteCentavos} onChange={(v) => setF({ ...f, aprovacaoLimiteGerenteCentavos: v })} dica="Até esse valor, o Gerente também aprova." />
-          <CampoDinheiro rotulo="Acima de quanto são duas aprovações (R$)" centavos={f.aprovacaoDuplaAcimaCentavos} onChange={(v) => setF({ ...f, aprovacaoDuplaAcimaCentavos: v })} dica="Duas pessoas diferentes, e uma delas é do Administrativo." />
+          <CampoDinheiro rotulo="Acima de quanto são duas aprovações (R$)" centavos={f.aprovacaoDuplaAcimaCentavos} onChange={(v) => setF({ ...f, aprovacaoDuplaAcimaCentavos: v })} dica="Duas pessoas diferentes; o Administrativo sozinho também basta." />
           <label className="check"><input type="checkbox" checked={f.financeiroVeDre} onChange={(e) => setF({ ...f, financeiroVeDre: e.target.checked })} />O Financeiro vê DRE e balanço</label>
           <Botao carregando={m.isPending} onClick={() => m.mutate()}>Salvar</Botao>
         </div>

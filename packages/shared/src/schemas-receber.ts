@@ -54,15 +54,19 @@ export const configFinanceiraSchema = z.object({
   financeiroVeDre: z.boolean().optional(),
   /** acima disso só o Administrativo aprova conta a pagar (vazio = sem limite) */
   aprovacaoLimiteGerenteCentavos: z.union([z.number().int().min(1).max(100_000_000_00), z.null()]).optional(),
-  /** acima disso são necessárias duas aprovações de pessoas diferentes, uma do Administrativo (vazio = nunca) */
+  /** acima disso são necessárias duas aprovações de pessoas diferentes, ou a do Administrativo sozinho (vazio = nunca) */
   aprovacaoDuplaAcimaCentavos: z.union([z.number().int().min(1).max(100_000_000_00), z.null()]).optional(),
 }).refine((c) => c.aprovacaoLimiteGerenteCentavos == null || c.aprovacaoDuplaAcimaCentavos == null || c.aprovacaoDuplaAcimaCentavos >= c.aprovacaoLimiteGerenteCentavos, { message: 'O valor da dupla aprovação não pode ser menor que o limite do Gerente.', path: ['aprovacaoDuplaAcimaCentavos'] });
 
-/** O que uma conta a pagar precisa para ser aprovada, pelo valor e pelas regras da loja. */
-export function requisitosDeAprovacao(valorCentavos: number, cfg: { aprovacaoLimiteGerenteCentavos?: number | null; aprovacaoDuplaAcimaCentavos?: number | null }): { somenteAdministrativo: boolean; aprovacoes: 1 | 2; exigeAdministrativo: boolean } {
+/**
+ * O que uma conta a pagar precisa para ser aprovada, pelo valor e pelas regras da loja.
+ * O Administrativo sozinho basta em qualquer faixa. Os demais: até o limite do Gerente, uma aprovação; acima dele, só o Administrativo;
+ * acima do valor de dupla aprovação, o Administrativo sozinho ou duas pessoas diferentes.
+ */
+export function requisitosDeAprovacao(valorCentavos: number, cfg: { aprovacaoLimiteGerenteCentavos?: number | null; aprovacaoDuplaAcimaCentavos?: number | null }): { somenteAdministrativo: boolean; aprovacoes: 1 | 2; administrativoBasta: boolean } {
   const dupla = cfg.aprovacaoDuplaAcimaCentavos != null && valorCentavos > cfg.aprovacaoDuplaAcimaCentavos;
-  const adm = dupla || (cfg.aprovacaoLimiteGerenteCentavos != null && valorCentavos > cfg.aprovacaoLimiteGerenteCentavos);
-  return { somenteAdministrativo: adm && !dupla, aprovacoes: dupla ? 2 : 1, exigeAdministrativo: adm };
+  const alto = cfg.aprovacaoLimiteGerenteCentavos != null && valorCentavos > cfg.aprovacaoLimiteGerenteCentavos;
+  return { somenteAdministrativo: alto && !dupla, aprovacoes: dupla ? 2 : 1, administrativoBasta: true };
 }
 
 export const liquidarCartaoSchema = z.object({

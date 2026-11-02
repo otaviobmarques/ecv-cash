@@ -327,15 +327,15 @@ describe('leitura de CSV', () => {
 describe('aprovação em níveis', () => {
   const cfg = { aprovacaoLimiteGerenteCentavos: 100_000, aprovacaoDuplaAcimaCentavos: 500_000 };
   it('até o limite do Gerente, uma aprovação de quem já podia aprovar', () => {
-    expect(requisitosDeAprovacao(100_000, cfg)).toEqual({ somenteAdministrativo: false, aprovacoes: 1, exigeAdministrativo: false });
+    expect(requisitosDeAprovacao(100_000, cfg)).toEqual({ somenteAdministrativo: false, aprovacoes: 1, administrativoBasta: true });
   });
-  it('acima do limite do Gerente, só o Administrativo, uma aprovação', () => {
-    expect(requisitosDeAprovacao(100_001, cfg)).toEqual({ somenteAdministrativo: true, aprovacoes: 1, exigeAdministrativo: true });
+  it('acima do limite do Gerente, só o Administrativo', () => {
+    expect(requisitosDeAprovacao(100_001, cfg)).toEqual({ somenteAdministrativo: true, aprovacoes: 1, administrativoBasta: true });
   });
-  it('acima do valor da dupla aprovação, duas pessoas, uma delas Administrativo', () => {
-    expect(requisitosDeAprovacao(500_001, cfg)).toEqual({ somenteAdministrativo: false, aprovacoes: 2, exigeAdministrativo: true });
+  it('acima do valor da dupla aprovação, duas pessoas diferentes ou o Administrativo sozinho', () => {
+    expect(requisitosDeAprovacao(500_001, cfg)).toEqual({ somenteAdministrativo: false, aprovacoes: 2, administrativoBasta: true });
   });
   it('sem limites configurados, tudo como antes', () => {
-    expect(requisitosDeAprovacao(99_999_999, {})).toEqual({ somenteAdministrativo: false, aprovacoes: 1, exigeAdministrativo: false });
+    expect(requisitosDeAprovacao(99_999_999, {})).toEqual({ somenteAdministrativo: false, aprovacoes: 1, administrativoBasta: true });
   });
 });
