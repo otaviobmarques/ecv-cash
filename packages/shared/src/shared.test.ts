@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MATRIZ, PERFIS, paraCsv, crc16, gerarPixCopiaECola, normalizarChavePix, periodoSugerido, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
+  MATRIZ, PERFIS, lerCsv, normalizarColuna, decodificarArquivo, paraCsv, crc16, gerarPixCopiaECola, normalizarChavePix, periodoSugerido, aplicarBp, calcularAtraso, cnpjValido, contraste, cpfValido, derivarTema, formatarBRL,
   normalizarPlaca, criarEmpresaSchema, descontoDoLaudo, laudoSchema, loteSchema, normalizarChassi, resolverPreco, clienteSchema, contaFinanceiraSchema, custoDoLaudo, diaAnterior, diaSeguinte, margemDoLaudo, precoSchema, servicoCustoSchema, PLANO_CONTAS_PADRAO, FORMAS_PAGAMENTO_PADRAO, paraCentavos, percentualParaBp, podeCriarUsuario, ratear, temPermissao, permissoesDoPerfil,
 } from './index';
 
@@ -304,5 +304,22 @@ describe('exportação CSV', () => {
     const l = csv.split('\r\n');
     expect(l[1]).toBe(`"'=HYPERLINK(""http://x"")";0,01;`);
     expect(l[2]).toBe('"Loja ""Centro""; filial";-0,05;');
+  });
+});
+
+describe('leitura de CSV', () => {
+  it('descobre o separador e lê aspas, vírgula decimal e quebra de linha dentro de campo', () => {
+    const r = lerCsv('﻿Nome;Valor;Obs\r\n"Silva; Filho";12,50;"linha 1\nlinha 2"\r\nAna;3;\r\n\r\n');
+    expect(r.separador).toBe(';'); expect(r.cabecalho).toEqual(['Nome', 'Valor', 'Obs']);
+    expect(r.linhas).toEqual([['Silva; Filho', '12,50', 'linha 1\nlinha 2'], ['Ana', '3', '']]);
+  });
+  it('aceita vírgula e tab como separador e aspas duplicadas', () => {
+    expect(lerCsv('a,b\n"x ""y""",2').linhas).toEqual([['x "y"', '2']]);
+    expect(lerCsv('a\tb\n1\t2').separador).toBe('\t');
+  });
+  it('normaliza nomes de coluna e decodifica Windows-1252', () => {
+    expect(normalizarColuna(' Razão Social (PJ) ')).toBe('razao_social_pj');
+    expect(decodificarArquivo(new Uint8Array([0x4a, 0x6f, 0xe3, 0x6f]))).toBe('João'); // "João" em Windows-1252
+    expect(decodificarArquivo(new TextEncoder().encode('João'))).toBe('João');
   });
 });

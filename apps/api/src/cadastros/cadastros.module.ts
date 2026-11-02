@@ -9,7 +9,7 @@ import { ContasFinanceirasController, ContasFinanceirasService } from './contas-
 
 @Module({
   controllers: [PlanoContasController, ServicosController, FornecedoresController, FormasPagamentoController, ClientesController, VistoriadoresController, ContasFinanceirasController],
-  exports: [ClientesService],
+  exports: [ClientesService, FornecedoresService],
   providers: [PlanoContasService, ServicosService, FornecedoresService, FormasPagamentoService, ClientesService, VistoriadoresService, ContasFinanceirasService],
 })
 export class CadastrosModule {}
