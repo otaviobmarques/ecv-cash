@@ -25,6 +25,8 @@ import { LgpdModule } from './lgpd/lgpd.module';
 import { CartaoModule } from './cartao/cartao.module';
 import { ComissoesModule } from './comissoes/comissoes.module';
 import { RepassesModule } from './repasses/repasses.module';
+import { AssinaturaModule } from './assinatura/assinatura.module';
+import { AssinaturaBoController, AssinaturaController } from './assinatura/assinatura.controller';
 import { CobrancaModule } from './cobranca/cobranca.module';
 import { ConsolidadoModule } from './consolidado/consolidado.module';
 import { BalancoModule } from './balanco/balanco.module';
@@ -36,8 +38,8 @@ import { BoService } from './backoffice/bo.service';
 import { BoGuard } from './backoffice/bo.guard';
 
 @Module({
-  imports: [DbModule, CommonModule, MailModule, CadastrosModule, LaudosModule, CaixaModule, ReceberModule, FaturasModule, PagarModule, RelatoriosModule, LgpdModule, CartaoModule, ComissoesModule, RepassesModule, CobrancaModule, ConsolidadoModule, BalancoModule, ImportacaoModule],
-  controllers: [BoAuthController, BoController, AuthController, EmpresasController, UsuariosController, TemaController, AuditoriaController, HealthController],
+  imports: [DbModule, CommonModule, MailModule, CadastrosModule, LaudosModule, CaixaModule, ReceberModule, FaturasModule, PagarModule, RelatoriosModule, LgpdModule, CartaoModule, ComissoesModule, RepassesModule, CobrancaModule, ConsolidadoModule, BalancoModule, ImportacaoModule, AssinaturaModule],
+  controllers: [BoAuthController, BoController, AssinaturaBoController, AssinaturaController, AuthController, EmpresasController, UsuariosController, TemaController, AuditoriaController, HealthController],
   providers: [BoAuthService, BoService, BoGuard, AuthService, EmpresasService, UsuariosService, TemaService, { provide: APP_GUARD, useClass: AcessoGuard }],
 })
 export class AppModule {}

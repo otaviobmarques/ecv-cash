@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } f
 import { ENV, type Env } from '../config/env';
 import { hojeSP } from '../caixa/razao';
 import { CobrancaService } from './cobranca.service';
+import { AssinaturaService } from '../assinatura/assinatura.service';
 import { DbService } from '../db/db.service';
 
 /**
@@ -13,7 +14,7 @@ export class AgendadorCobranca implements OnApplicationBootstrap, OnModuleDestro
   private readonly log = new Logger('Agendador');
   private timer?: NodeJS.Timeout;
   private ultimoDia = '';
-  constructor(private readonly cobranca: CobrancaService, private readonly db: DbService, @Inject(ENV) private readonly env: Env) {}
+  constructor(private readonly cobranca: CobrancaService, private readonly assinaturas: AssinaturaService, private readonly db: DbService, @Inject(ENV) private readonly env: Env) {}
 
   onApplicationBootstrap() {
     if (this.env.AGENDADOR !== 'true') return;
@@ -29,6 +30,8 @@ export class AgendadorCobranca implements OnApplicationBootstrap, OnModuleDestro
     if (hora < this.env.HORA_COBRANCA || this.ultimoDia === hoje) return;
     this.ultimoDia = hoje;
     await this.limpar();
+    try { const a = await this.assinaturas.processarTodas(hoje); this.log.log(`Assinaturas: ${a.geradas} mensalidades geradas em ${a.grupos} grupos.`); }
+    catch (e) { this.log.error(`Assinaturas falharam: ${(e as Error).message}`); }
     try { const r = await this.cobranca.processarTodas(hoje); this.log.log(`Régua rodou: ${r.enviados} e-mails em ${r.grupos} grupos.`); }
     catch (e) { this.ultimoDia = ''; this.log.error(`Régua falhou: ${(e as Error).message}`); }
   }

@@ -1,16 +1,19 @@
-import { Link, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { Botao, Carregando, Pilula } from '@ecv/ui';
 import { ROTULO_PAPEL_INTERNO } from '@ecv/shared';
 import { useInterno, useSessaoInterna } from './sessao';
 import { Login } from './paginas/Login';
 import { Grupos } from './paginas/Grupos';
 import { GrupoPagina } from './paginas/Grupo';
+import { Planos } from './paginas/Planos';
+import { Mensalidades } from './paginas/Mensalidades';
 import redbox from './redbox.png';
 import domma from './domma.png';
 
 function Moldura() {
   const { data: eu } = useInterno();
   const { sair } = useSessaoInterna();
+  const estilo = ({ isActive }: { isActive: boolean }) => ({ fontWeight: 700, color: isActive ? 'var(--verde)' : 'var(--texto)', textDecoration: isActive ? 'underline' : 'none' } as const);
   const nav = useNavigate();
   if (!eu) return <Navigate to="/login" replace />;
   return (
@@ -19,6 +22,11 @@ function Moldura() {
         <div className="linha" style={{ alignItems: 'center' }}>
           <Link to="/" style={{ textDecoration: 'none' }}><b style={{ fontSize: 18, color: 'var(--verde)' }}>ECV Cash · Backoffice</b></Link>
           <Pilula tipo="info">Sistema separado · 2FA ativo</Pilula>
+          <nav className="linha" aria-label="Seções" style={{ gap: 16, marginLeft: 8 }}>
+            <NavLink to="/" end style={estilo}>Grupos</NavLink>
+            {eu.permissoes.includes('assinatura.ver') && <NavLink to="/mensalidades" style={estilo}>Mensalidades</NavLink>}
+            {eu.permissoes.includes('assinatura.ver') && <NavLink to="/planos" style={estilo}>Planos</NavLink>}
+          </nav>
         </div>
         <div className="usuario">
           <div><b>{eu.nome}</b><span className="mut peq">{ROTULO_PAPEL_INTERNO[eu.papel]}</span></div>
@@ -44,6 +52,8 @@ export function App() {
       <Route element={<Moldura />}>
         <Route index element={<Grupos />} />
         <Route path="grupos/:id" element={<GrupoPagina />} />
+        <Route path="mensalidades" element={<Mensalidades />} />
+        <Route path="planos" element={<Planos />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

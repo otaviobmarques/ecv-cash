@@ -16,6 +16,10 @@ export const MATRIZ_INTERNA = {
   'usuario.redefinir_acesso': ['PLATAFORMA', 'SUPORTE'],
   'suporte.entrar_como': ['PLATAFORMA', 'SUPORTE'],
   'interno.gerir': ['PLATAFORMA'],
+  'assinatura.ver': ['PLATAFORMA', 'OPERACOES', 'SUPORTE'],
+  'assinatura.gerir': ['PLATAFORMA', 'OPERACOES'],
+  'assinatura.baixar': ['PLATAFORMA', 'OPERACOES'],
+  'plano.gerir': ['PLATAFORMA'],
 } as const satisfies Record<string, readonly PapelInterno[]>;
 
 export type PermissaoInterna = keyof typeof MATRIZ_INTERNA;

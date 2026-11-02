@@ -11,6 +11,7 @@ const ACOES: Record<string, string> = {
   'usuario.criado': 'Usuário criado', 'usuario.inativado': 'Usuário inativado', 'usuario.reativado': 'Usuário reativado',
   'usuario.convite_aceito': 'Convite aceito', 'usuario.acesso_redefinido': 'Acesso redefinido pelo suporte',
   'tema.salvo': 'Cor do tema alterada', 'grupo.criado': 'Grupo criado', 'grupo.suspenso': 'Grupo suspenso', 'grupo.reativado': 'Grupo reativado',
+  'assinatura.contratada': 'Assinatura contratada', 'assinatura.editada': 'Contrato da assinatura alterado', 'assinatura.cancelada': 'Assinatura cancelada', 'assinatura.cobranca_gerada': 'Mensalidade gerada', 'assinatura.cobranca_paga': 'Mensalidade paga', 'assinatura.cobranca_cancelada': 'Mensalidade dispensada', 'assinatura.inadimplente': 'Assinatura inadimplente', 'assinatura.regularizada': 'Assinatura regularizada',
   'suporte.acesso_iniciado': 'Suporte pediu acesso', 'suporte.sessao_aberta': 'Suporte entrou no sistema', 'suporte.acesso_encerrado': 'Suporte encerrou o acesso',
 };
 const CAMPOS: Record<string, string> = { nomeFantasia: 'Nome fantasia', cidade: 'Cidade', uf: 'UF', emailFinanceiro: 'E-mail do financeiro', corPrimaria: 'Cor principal', status: 'Situação', nome: 'Nome', email: 'E-mail', perfil: 'Perfil' };

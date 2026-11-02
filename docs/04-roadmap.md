@@ -31,4 +31,6 @@
 - [ ] Logotipo da empresa nos PDFs (depende do armazenamento S3).
 
 ## Fase 4: futuro
-NFS-e e boleto, importação ou API de laudos, conciliação OFX, app mobile, cobrança de assinatura do SaaS.
+- [x] Cobrança de assinatura do SaaS: planos (catálogo), contrato por grupo com preço combinado, desconto e período de teste, mensalidade gerada todo mês (base + empresas além das incluídas), baixa manual pela equipe, carência, inadimplência com suspensão opcional do grupo, aviso e PIX copia e cola em "Minha assinatura" (Administrativo do cliente), telas Planos e Mensalidades no backoffice. Rotina diária no mesmo agendador (`AGENDADOR=true`).
+- [ ] NFS-e e boleto, importação ou API de laudos, conciliação OFX, app mobile.
+- [ ] Assinatura: cobrança automática por gateway (cartão recorrente ou boleto registrado) e envio da mensalidade por e-mail.

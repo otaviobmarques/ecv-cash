@@ -33,6 +33,7 @@ Legenda: ✔ permitido · ◐ com condição · — sem acesso. Escopo: Administ
 | Exportar PDF/Excel | ✔ | ✔ | ✔ | — |
 
 Backoffice (equipe interna): Plataforma (tudo), Operações (grupos e empresas), Suporte (log, redefinir acesso, "entrar como" com motivo).
+Assinatura do SaaS: `assinatura.ver` (os três papéis), `assinatura.gerir` e `assinatura.baixar` (Plataforma e Operações), `plano.gerir` (só Plataforma). No sistema do cliente, `assinatura.ver` é só do Administrativo.
 
 Regras gerais: ação sensível exige motivo e gera log; período fechado bloqueia alteração; CPF/CNPJ mascarado para o Vistoriador; quem cria pagamento não aprova (exceto o Administrativo, que pode tudo).
 

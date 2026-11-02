@@ -123,3 +123,22 @@ export interface RegraRepasse { id: string; fornecedorId: string; fornecedor: st
 export interface PreviaRepasse { regraId: string; nome: string; fornecedor: string; tipo: string; baseCentavos: number; valorCentavos: number; baseTipo: string | null; apurada: boolean; apuracaoId: string | null }
 export interface ApuracaoRepasse { id: string; mes: string; nome: string; fornecedor: string; baseCentavos: number; valorCentavos: number; status: 'APURADO' | 'CANCELADO'; motivoCancelamento: string | null; tituloPagarId: string | null; statusPagar: string | null }
 export interface Aliquota { id: string; nome: 'ISS' | 'PIS' | 'COFINS' | 'SIMPLES_NACIONAL' | 'OUTRO'; descricao: string | null; percentualBp: number; vigenciaIni: string; vigenciaFim: string | null; ativa: boolean }
+
+export interface MinhaAssinatura {
+  grupoNome: string;
+  empresasAtivas: number;
+  emTeste: boolean;
+  mensalidadesEmAtraso: number;
+  pix: string | null;
+  assinatura: {
+    planoNome: string; valorBaseCentavos: number; empresasIncluidas: number; valorEmpresaAdicionalCentavos: number; descontoBp: number; diaVencimento: number;
+    testeAte: string | null; status: 'ATIVA' | 'INADIMPLENTE' | 'CANCELADA'; carenciaDias: number; suspendeEmAtraso: boolean;
+  } | null;
+  proxima: Cobranca | null;
+  cobrancas: Cobranca[];
+}
+export interface Cobranca {
+  id: string; competencia: string; vencimento: string; valorCentavos: number; descontoCentavos: number; status: 'ABERTA' | 'PAGA' | 'CANCELADA';
+  pagoEm: string | null; formaPagamento: string | null; emAtraso?: boolean;
+}
+export type AvisoAssinatura = { tipo: 'nenhum' } | { tipo: 'atraso'; quantidade: number; vencimento: string } | { tipo: 'vencendo'; vencimento: string; valorCentavos: number };

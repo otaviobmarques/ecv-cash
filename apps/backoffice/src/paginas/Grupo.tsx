@@ -7,12 +7,14 @@ import { api } from '../api';
 import { useInterno } from '../sessao';
 import type { EventoGrupo, GrupoDetalhe } from '../tipos';
 import { PILULA_GRUPO } from './Grupos';
+import { AssinaturaGrupo } from './AssinaturaGrupo';
 
 type Acao = { tipo: 'status' } | { tipo: 'entrar' } | { tipo: 'redefinir'; id: string; nome: string };
 const ACOES: Record<string, string> = {
   'grupo.criado': 'Grupo criado', 'grupo.suspenso': 'Grupo suspenso', 'grupo.reativado': 'Grupo reativado', 'auth.login': 'Login de usuário', 'auth.logout': 'Logout de usuário',
   'empresa.criada': 'Empresa criada', 'empresa.editada': 'Empresa editada', 'usuario.criado': 'Usuário criado', 'usuario.inativado': 'Usuário inativado', 'usuario.reativado': 'Usuário reativado',
   'usuario.convite_aceito': 'Convite aceito', 'usuario.acesso_redefinido': 'Acesso redefinido', 'tema.salvo': 'Tema alterado',
+  'assinatura.contratada': 'Assinatura contratada', 'assinatura.editada': 'Contrato alterado', 'assinatura.cancelada': 'Assinatura cancelada', 'assinatura.cobranca_gerada': 'Mensalidade gerada', 'assinatura.cobranca_paga': 'Mensalidade paga', 'assinatura.cobranca_cancelada': 'Mensalidade dispensada', 'assinatura.inadimplente': 'Assinatura inadimplente', 'assinatura.regularizada': 'Assinatura regularizada',
   'suporte.acesso_iniciado': 'Suporte pediu acesso', 'suporte.sessao_aberta': 'Suporte entrou', 'suporte.acesso_encerrado': 'Suporte saiu',
 };
 
@@ -67,6 +69,8 @@ export function GrupoPagina() {
         <thead><tr><th>Empresa</th><th>CNPJ</th><th>Cidade</th><th>Situação</th></tr></thead>
         <tbody>{g.empresas.map((e) => <tr key={e.id}><td><b>{e.nomeFantasia}</b></td><td>{formatarCnpj(e.cnpj)}</td><td>{e.cidade}/{e.uf}</td><td>{e.status === 'ATIVO' ? <Pilula tipo="ok">✓ Ativa</Pilula> : <Pilula>Inativa</Pilula>}</td></tr>)}</tbody>
       </table></div></div>
+
+      {pode('assinatura.ver') && <AssinaturaGrupo grupoId={id} />}
 
       <div className="cartao pilha"><h2>Usuários</h2><div className="tw"><table>
         <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Último login</th><th /></tr></thead>

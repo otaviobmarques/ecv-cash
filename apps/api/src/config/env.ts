@@ -22,6 +22,11 @@ const schema = z.object({
   /** Roda a régua de cobrança todo dia, na hora indicada (Brasília). Ligar em um único processo da API. */
   AGENDADOR: z.enum(['true', 'false']).default('false'),
   HORA_COBRANCA: z.coerce.number().int().min(0).max(23).default(8),
+  /** Conta PIX da ECV Cash para receber as mensalidades (aparece em "Minha assinatura"). Sem chave, só o valor e o vencimento aparecem. */
+  ECV_PIX_TIPO: z.enum(['CNPJ', 'CPF', 'EMAIL', 'TELEFONE', 'ALEATORIA']).optional(),
+  ECV_PIX_CHAVE: z.string().optional(),
+  ECV_PIX_NOME: z.string().default('ECV CASH'),
+  ECV_PIX_CIDADE: z.string().default('SAO PAULO'),
   /** 32 bytes em base64. Cifra segredos de 2FA e assina tickets. Obrigatória em produção. */
   CHAVE_SEGREDOS: z.string().optional(),
 });

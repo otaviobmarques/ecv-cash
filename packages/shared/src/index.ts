@@ -20,3 +20,4 @@ export * from './schemas-pagar';
 export * from './csv';
 export * from './schemas-comissoes';
 export * from './schemas-repasses';
+export * from './schemas-assinatura';

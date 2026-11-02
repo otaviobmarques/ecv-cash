@@ -45,9 +45,11 @@ aprovação de contas a pagar, Financeiro vê DRE). Laudo com baixa ou fatura fi
 
 **Consolidado (0015).** `cliente.empresa_vinculada_id` e `fornecedor.empresa_vinculada_id` dizem que aquele cliente ou fornecedor é outra loja do grupo; a função `lancamento_intercompany` reconhece o dinheiro que veio ou foi para elas. A eliminação é calculada na hora, em cada relatório consolidado.
 
+**Assinatura do SaaS (0019).** `plano_saas` (catálogo da plataforma, sem `grupo_id`), `assinatura_saas` (um contrato por grupo, com o preço combinado copiado do plano) e `cobranca_saas` (uma mensalidade por competência, FK composta `(assinatura_id, grupo_id)`, RLS forçada por grupo). Gatilho `cobranca_saas_protegida`: paga ou cancelada não muda mais, e valor, competência e vencimento nunca mudam. Funções `bo_listar_cobrancas_saas` e `bo_listar_assinaturas_saas` (dono `ecv_definer`) só para a lista que atravessa grupos no backoffice.
+
 ## Ainda não existe
 Balanço gerencial (`saldo_patrimonial_manual`), aprovação de pagamentos em múltiplos níveis, importação por planilha, `solicitacao_titular` (hoje o pedido do titular é atendido por tela e fica na auditoria).
 
 ## Estados
 Laudo: ativo, cancelado. Título a receber: aberto, parcial, quitado, cancelado ("vencido" é derivado). Fatura: aberta, parcial, paga, cancelada.
-Título a pagar: rascunho, aguardando aprovação, aprovado, parcial, pago, cancelado. Cheque: recebido, depositado, compensado, devolvido. Venda no cartão: prevista, liquidada, cancelada.
+Título a pagar: rascunho, aguardando aprovação, aprovado, parcial, pago, cancelado. Cheque: recebido, depositado, compensado, devolvido. Venda no cartão: prevista, liquidada, cancelada. Assinatura: ativa, inadimplente, cancelada. Mensalidade do SaaS: aberta, paga, dispensada ("vencida" é derivado).

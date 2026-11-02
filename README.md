@@ -40,6 +40,8 @@ Ele imprime uma senha provisória. No primeiro login o backoffice pede para liga
 
 **Verificação no navegador:** `pnpm e2e <senha provisória>` percorre criar grupo, convite, login, telas e suporte (ver `e2e/smoke.ts`). `pnpm e2e:cadastros` percorre as telas de Cadastros com os dados do `db:seed` (ver `e2e/cadastros.ts`). `pnpm e2e:laudos` percorre o lançamento de laudos como Vistoriador e Gerente (ver `e2e/laudos.ts`; precisa de `pnpm db:seed`). `pnpm e2e:financeiro` percorre receber, faturados, pagar, cartões, comissões, DRE e painel (ver `e2e/financeiro.ts`).
 
+**Assinatura do SaaS:** a ECV Cash cobra cada grupo por mensalidade. A equipe cria planos (backoffice > Planos), contrata o plano no grupo (Grupos > Assinatura) e acompanha em Mensalidades. Para o PIX aparecer em "Minha assinatura" do cliente, defina `ECV_PIX_TIPO` (CNPJ, CPF, EMAIL, TELEFONE ou ALEATORIA), `ECV_PIX_CHAVE`, `ECV_PIX_NOME` e `ECV_PIX_CIDADE`. As mensalidades são geradas pela rotina diária (`AGENDADOR=true`); a baixa é manual.
+
 **E-mail:** sem `SMTP_HOST` nada é enviado: as cobranças ficam registradas como "e-mail não configurado". Variáveis: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, `SMTP_FROM`. A régua roda sozinha todo dia quando `AGENDADOR=true` (hora em `HORA_COBRANCA`, padrão 8h de Brasília), em um único processo da API.
 
 ## Testes

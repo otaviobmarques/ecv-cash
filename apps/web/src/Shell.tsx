@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ROTULO_PERFIL, type Perfil, type Permissao } from '@ecv/shared';
-import { Botao, Icone, aplicarTema, useToast, type NomeIcone } from '@ecv/ui';
+import { ROTULO_PERFIL, formatarBRL, type Perfil, type Permissao } from '@ecv/shared';
+import { Aviso, Botao, Icone, aplicarTema, useToast, type NomeIcone } from '@ecv/ui';
 import { api } from './api';
 import { useSessao } from './sessao';
-import type { Empresa, Eu, TemaEfetivo } from './tipos';
+import type { AvisoAssinatura, Empresa, Eu, TemaEfetivo } from './tipos';
+import { dataBr } from './formulario';
 import redbox from './redbox.png';
 import domma from './domma.png';
 
@@ -28,6 +29,7 @@ const MENU: { para: string; rotulo: string; icone: NomeIcone; perm?: Permissao; 
   { para: '/empresas', rotulo: 'Empresas', icone: 'empresas' },
   { para: '/usuarios', rotulo: 'Usuários', icone: 'usuarios', perm: 'usuario.gerir' },
   { para: '/aparencia', rotulo: 'Aparência', icone: 'aparencia', perm: 'tema.editar' },
+  { para: '/assinatura', rotulo: 'Assinatura', icone: 'caixa', perm: 'assinatura.ver' },
   { para: '/auditoria', rotulo: 'Auditoria', icone: 'auditoria', perm: 'auditoria.ver' },
 ];
 
@@ -51,6 +53,7 @@ export function Shell({ eu }: { eu: Eu }) {
       qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'eu' && q.queryKey[0] !== 'empresas' });
     } catch (e) { avisar((e as Error).message, 'erro'); }
   };
+  const aviso = useQuery({ queryKey: ['assinatura-aviso'], queryFn: () => api.get<AvisoAssinatura>('/assinatura/aviso'), enabled: eu.permissoes.includes('assinatura.ver'), staleTime: 5 * 60_000 });
   const ativa = empresas.data?.find((e) => e.id === eu.empresaAtivaId);
   const itens = MENU.filter((m) => (!m.perm || eu.permissoes.includes(m.perm)) && !(eu.perfilAtivo && m.naoPara?.includes(eu.perfilAtivo)));
   const iniciais = eu.nome.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -92,6 +95,16 @@ export function Shell({ eu }: { eu: Eu }) {
               <Botao variante="sec" pequeno onClick={async () => { await sair(); nav('/login'); }}>Sair</Botao>
             </div>
           </header>
+          {aviso.data && aviso.data.tipo !== 'nenhum' && (
+            <div style={{ padding: '12px 24px 0' }}>
+              <Aviso tipo={aviso.data.tipo === 'atraso' ? 'erro' : 'aviso'}>
+                {aviso.data.tipo === 'atraso'
+                  ? `Há ${aviso.data.quantidade} mensalidade(s) da assinatura vencida(s) desde ${dataBr(aviso.data.vencimento)}.`
+                  : `A mensalidade da assinatura (${formatarBRL(aviso.data.valorCentavos)}) vence em ${dataBr(aviso.data.vencimento)}.`}{' '}
+                <NavLink to="/assinatura">Ver assinatura</NavLink>
+              </Aviso>
+            </div>
+          )}
           <main className="conteudo"><Outlet context={{ eu, empresas: empresas.data ?? [] }} /></main>
         </div>
       </div>

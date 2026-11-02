@@ -29,6 +29,7 @@ export const MATRIZ = {
   'custo_servico.ver': [A, G],
   'regua_cobranca.editar': [A, G],
   'auditoria.ver': [A, G],
+  'assinatura.ver': [A], // a assinatura do próprio grupo (mensalidades da ECV Cash)
   'historico.ver': [A, G, F],
   // Cadastros
   'cliente.ver': [A, G, F, V],

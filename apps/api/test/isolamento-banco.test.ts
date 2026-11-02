@@ -173,4 +173,31 @@ describe('isolamento no banco (RLS)', () => {
         `INSERT INTO conta_financeira (grupo_id, empresa_id, nome, tipo) VALUES ($1,$2,'Invasora','CAIXA')`, [cen.B.grupoId, a1]))).rejects.toMatchObject({ code: '23503' });
     });
   });
+
+  describe('assinatura do SaaS', () => {
+    it('contrato e mensalidades de um grupo não aparecem, não se alteram e não se apagam por outro', async () => {
+      const plano = (await db.semTenant((c) => c.query(`INSERT INTO plano_saas (nome, valor_base_centavos) VALUES ($1, 1000) RETURNING id`, [`Iso ${randomUUID()}`]))).rows[0].id;
+      const rede = (g: string) => ({ grupoId: g, rede: true, empresas: [] as string[] });
+      const ass = await db.tenant(rede(cen.A.grupoId), async (c) => {
+        const a = (await c.query(`INSERT INTO assinatura_saas (grupo_id, plano_id, valor_base_centavos, empresas_incluidas, valor_empresa_adicional_centavos, dia_vencimento, inicio)
+                                  VALUES ($1,$2,1000,1,0,10,'2026-01-01') RETURNING id`, [cen.A.grupoId, plano])).rows[0].id;
+        await c.query(`INSERT INTO cobranca_saas (grupo_id, assinatura_id, competencia, vencimento, empresas_cobradas, valor_bruto_centavos, valor_centavos)
+                       VALUES ($1,$2,'2026-01-01','2026-01-10',1,1000,1000)`, [cen.A.grupoId, a]);
+        return a;
+      });
+      for (const t of ['assinatura_saas', 'cobranca_saas']) {
+        expect((await db.tenant(rede(cen.B.grupoId), (c) => c.query(`SELECT 1 FROM ${t}`))).rowCount, t).toBe(0);
+        expect((await db.semTenant((c) => c.query(`SELECT 1 FROM ${t}`))).rowCount, t).toBe(0);
+        await expect(db.tenant(rede(cen.A.grupoId), (c) => c.query(`DELETE FROM ${t}`)), t).rejects.toMatchObject({ code: '42501' });
+      }
+      expect((await db.tenant(rede(cen.B.grupoId), (c) => c.query(`UPDATE cobranca_saas SET status = 'PAGA', pago_em = now(), forma_pagamento = 'PIX'`))).rowCount).toBe(0);
+      await expect(db.tenant(rede(cen.B.grupoId), (c) => c.query(
+        `INSERT INTO assinatura_saas (grupo_id, plano_id, valor_base_centavos, empresas_incluidas, valor_empresa_adicional_centavos, dia_vencimento, inicio)
+         VALUES ($1,$2,1,1,0,5,'2026-01-01')`, [cen.A.grupoId, plano]))).rejects.toMatchObject({ code: '42501' });
+      // mensalidade do grupo B apontando para a assinatura do A: a chave composta (id, grupo_id) recusa
+      await expect(db.tenant(rede(cen.B.grupoId), (c) => c.query(
+        `INSERT INTO cobranca_saas (grupo_id, assinatura_id, competencia, vencimento, empresas_cobradas, valor_bruto_centavos, valor_centavos)
+         VALUES ($1,$2,'2026-02-01','2026-02-10',1,1,1)`, [cen.B.grupoId, ass]))).rejects.toMatchObject({ code: '23503' });
+    });
+  });
 });

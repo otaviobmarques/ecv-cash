@@ -53,7 +53,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .cartao { background: var(--branco); border-radius: 16px; padding: 20px; min-width: 0; }
 .grade { display: grid; gap: 16px; min-width: 0; }
-.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .linha { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .entre { justify-content: space-between; }
 .pilha { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -103,11 +103,11 @@ dialog .corpo { display: flex; flex-direction: column; gap: 16px; }
 .qr { width: 168px; background: #fff; padding: 8px; border: 1px solid var(--borda); border-radius: 8px; }
 .cor-amostra { width: 56px; height: 56px; border-radius: 12px; border: 1px solid var(--borda); flex: none; }
 
-@media (max-width: 1100px) { .g3 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) { .g3 { grid-template-columns: minmax(0, 1fr); } .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
   .lateral-nav { flex-direction: row; overflow-x: auto; padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--borda); }
   .marca, .rodape-nav { display: none; } .nav { flex-direction: row; } .nav a { white-space: nowrap; }
-  .g2 { grid-template-columns: minmax(0, 1fr); }
+  .g2, .g4 { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: no-preference) { dialog[open].lateral { animation: entra .18s ease-out; } @keyframes entra { from { transform: translateX(24px); opacity: .6; } } }

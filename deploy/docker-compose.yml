@@ -60,6 +60,10 @@ services:
       # a régua de cobrança roda todo dia de manhã (um único processo da API)
       AGENDADOR: "true"
       HORA_COBRANCA: ${HORA_COBRANCA:-8}
+      ECV_PIX_TIPO: ${ECV_PIX_TIPO:-}
+      ECV_PIX_CHAVE: ${ECV_PIX_CHAVE:-}
+      ECV_PIX_NOME: ${ECV_PIX_NOME:-ECV CASH}
+      ECV_PIX_CIDADE: ${ECV_PIX_CIDADE:-SAO PAULO}
       # Traefik -> Caddy -> API: dois proxies na frente
       TRUST_PROXY_SALTOS: "2"
     networks: [interna]

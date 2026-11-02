@@ -22,6 +22,7 @@ import { CartoesCheques } from './paginas/CartoesCheques';
 import { Comissoes } from './paginas/Comissoes';
 import { Royalties } from './paginas/Royalties';
 import { Caixa } from './paginas/Caixa';
+import { Assinatura } from './paginas/Assinatura';
 import { Cadastros } from './paginas/Cadastros';
 
 export function App() {
@@ -50,6 +51,7 @@ export function App() {
         <Route path="cadastros" element={<Cadastros />} />
         <Route path="empresas" element={<Empresas />} />
         <Route path="usuarios" element={<Usuarios />} />
+        <Route path="assinatura" element={<Assinatura />} />
         <Route path="aparencia" element={<Aparencia />} />
         <Route path="auditoria" element={<Auditoria />} />
         <Route path="*" element={<Navigate to="/" replace />} />
