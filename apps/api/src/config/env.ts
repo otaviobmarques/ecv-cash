@@ -22,6 +22,10 @@ const schema = z.object({
   /** Roda a régua de cobrança todo dia, na hora indicada (Brasília). Ligar em um único processo da API. */
   AGENDADOR: z.enum(['true', 'false']).default('false'),
   HORA_COBRANCA: z.coerce.number().int().min(0).max(23).default(8),
+  /** Segredo do Vercel Cron: libera `GET /interno/agendador` com `Authorization: Bearer <CRON_SECRET>`. Sem ele, a rota fica fechada. */
+  CRON_SECRET: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
+  /** Conexões por processo. Na Vercel cada instância é um processo: mantenha baixo e use o pooler do Supabase (modo transação). */
+  PG_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
   /** Conta PIX da ECV Cash para receber as mensalidades (aparece em "Minha assinatura"). Sem chave, só o valor e o vencimento aparecem. */
   // o docker-compose manda "" quando a variável não está no .env: vazio vale como ausente
   ECV_PIX_TIPO: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['CNPJ', 'CPF', 'EMAIL', 'TELEFONE', 'ALEATORIA']).optional()),
