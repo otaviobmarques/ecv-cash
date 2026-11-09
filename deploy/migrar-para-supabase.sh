@@ -8,8 +8,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 : "${SUPABASE_DB_URL:?Defina SUPABASE_DB_URL (Session pooler, usuário postgres).}"
 
-local_sql() { docker compose exec -T db psql -U postgres -d ecv_cash -XAtq -v ON_ERROR_STOP=1 "$@"; }
-remoto_sql() { docker compose exec -T db psql "$SUPABASE_DB_URL" -XAtq -v ON_ERROR_STOP=1 "$@"; }
+# </dev/null: sem isso o "docker compose exec" consome a entrada dos laços "while read" abaixo e só a primeira tabela é conferida.
+local_sql() { docker compose exec -T db psql -U postgres -d ecv_cash -XAtq -v ON_ERROR_STOP=1 "$@" </dev/null; }
+remoto_sql() { docker compose exec -T db psql "$SUPABASE_DB_URL" -XAtq -v ON_ERROR_STOP=1 "$@" </dev/null; }
 
 echo "1/4 Conferindo as migrações dos dois lados..."
 ml=$(local_sql -c "SELECT string_agg(nome, ',' ORDER BY nome) FROM schema_migracao")
@@ -22,10 +23,10 @@ fi
 contar='SELECT format($$SELECT %L, count(*) FROM %I$$, c.relname, c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
   WHERE n.nspname = $$public$$ AND c.relkind IN ($$r$$, $$p$$) AND NOT c.relispartition AND c.relname <> $$schema_migracao$$ ORDER BY 1'
 
-echo "2/4 Conferindo se o Supabase está vazio (só são aceitos usuários internos criados lá, sem nenhum uso)..."
+echo "2/4 Conferindo se o Supabase está vazio (só são aceitos usuários internos criados lá e dados técnicos de login)..."
 while IFS= read -r q; do
   r=$(remoto_sql -c "$q")
-  case "$r" in usuario_interno\|*|sessao_interna\|*|*\|0) ;; *) echo "O Supabase já tem dados ($r). Para não misturar, a cópia só roda num banco vazio."; exit 1 ;; esac
+  case "$r" in usuario_interno\|*|sessao_interna\|*|login_tentativa\|*|*\|0) ;; *) echo "O Supabase já tem dados ($r). Para não misturar, a cópia só roda num banco vazio."; exit 1 ;; esac
 done < <(local_sql -c "$contar")
 
 # Usuário interno criado no Supabase com o mesmo e-mail de um da VPS: fica o da VPS (com 2FA e histórico); o de lá sai.
@@ -34,6 +35,8 @@ trocar="DELETE FROM sessao_interna WHERE usuario_interno_id IN (SELECT id FROM u
 DELETE FROM usuario_interno WHERE lower(email) IN ($emails_vps);
 -- os que ficam tiveram o 2FA cifrado com a chave do Supabase; com a CHAVE_SEGREDOS da VPS eles configuram o 2FA de novo no próximo login
 DELETE FROM sessao_interna;
+-- tentativas de login feitas no Supabase (dado técnico): saem para as da VPS entrarem com os mesmos números
+DELETE FROM login_tentativa;
 UPDATE usuario_interno SET mfa_secret = NULL, mfa_ultimo_passo = NULL;"
 echo "   Usuários internos do Supabase que serão trocados pelos da VPS: $(remoto_sql -c "SELECT coalesce(string_agg(email, ', '), 'nenhum') FROM usuario_interno WHERE lower(email) IN ($emails_vps)")"
 echo "   Usuários internos do Supabase que ficam: $(remoto_sql -c "SELECT coalesce(string_agg(email, ', '), 'nenhum') FROM usuario_interno WHERE lower(email) NOT IN ($emails_vps)")"
