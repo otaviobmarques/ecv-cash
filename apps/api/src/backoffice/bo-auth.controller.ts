@@ -16,16 +16,23 @@ export class BoAuthController {
   constructor(private readonly auth: BoAuthService, @Inject(ENV) private readonly env: Env) {}
 
   @Post('login') @HttpCode(200)
-  login(@Body() body: unknown, @Req() req: Request) {
+  async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const { email, senha } = validar(loginInternoSchema, body);
-    return this.auth.login(email, senha, req.ip);
+    const r = await this.auth.login(email, senha, req.ip, req.headers['user-agent']);
+    if (r.etapa !== 'ENTROU') return r;
+    this.gravarCookie(res, r.token, r.expiraEm);
+    return { etapa: r.etapa, interno: { ...r.interno, permissoes: permissoes(r.interno.papel) } };
+  }
+
+  private gravarCookie(res: Response, token: string, expiraEm: Date) {
+    res.cookie(COOKIE_BO, token, { httpOnly: true, sameSite: 'strict', secure: this.env.NODE_ENV === 'production', path: '/', expires: expiraEm });
   }
 
   @Post('mfa') @HttpCode(200)
   async mfa(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const { ticket, codigo } = validar(mfaInternoSchema, body);
     const r = await this.auth.mfa(ticket, codigo, req.ip, req.headers['user-agent']);
-    res.cookie(COOKIE_BO, r.token, { httpOnly: true, sameSite: 'strict', secure: this.env.NODE_ENV === 'production', path: '/', expires: r.expiraEm });
+    this.gravarCookie(res, r.token, r.expiraEm);
     return { ...r.interno, permissoes: permissoes(r.interno.papel) };
   }
 

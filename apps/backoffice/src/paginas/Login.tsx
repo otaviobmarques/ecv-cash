@@ -7,6 +7,8 @@ import { useInterno, useSessaoInterna } from '../sessao';
 import type { Interno } from '../tipos';
 
 type Passo = { etapa: 'MFA' | 'CONFIGURAR_MFA'; ticket: string; segredo?: string; uri?: string };
+/** Com o 2FA desligado no servidor (BO_EXIGIR_2FA=false), a senha já abre a sessão. */
+type Entrou = { etapa: 'ENTROU'; interno: Interno };
 
 function Qr({ texto }: { texto: string }) {
   const svg = useMemo(() => { const q = qrcode(0, 'M'); q.addData(texto); q.make(); return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }, [texto]);
@@ -27,7 +29,10 @@ export function Login() {
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault(); setErro(null); setOcupado(true);
     try {
-      if (!passo) setPasso(await api.post<Passo>('/backoffice/auth/login', { email, senha }));
+      if (!passo) {
+        const r = await api.post<Passo | Entrou>('/backoffice/auth/login', { email, senha });
+        if (r.etapa === 'ENTROU') { definir(r.interno); nav('/'); } else setPasso(r);
+      }
       else { definir(await api.post<Interno>('/backoffice/auth/mfa', { ticket: passo.ticket, codigo })); nav('/'); }
     } catch (x) {
       setErro((x as Error).message);

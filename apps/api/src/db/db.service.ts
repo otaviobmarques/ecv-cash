@@ -20,7 +20,7 @@ export class DbService implements OnModuleDestroy {
   readonly pool: Pool;
 
   constructor(@Inject(ENV) env: Env) {
-    this.pool = new Pool({ connectionString: env.DATABASE_URL, max: 10 });
+    this.pool = new Pool({ connectionString: env.DATABASE_URL, max: env.PG_POOL_MAX, idleTimeoutMillis: 10_000 });
   }
 
   /** Executa `fn` numa transação com o contexto de grupo e lojas aplicado. Sem contexto, nenhuma linha aparece. */
