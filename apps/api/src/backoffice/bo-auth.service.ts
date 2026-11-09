@@ -16,20 +16,27 @@ type TicketMfa = { uid: string; etapa: 'MFA' | 'CONFIGURAR'; segredo?: string };
 @Injectable()
 export class BoAuthService {
   readonly cripto: Cripto;
+  private readonly exigir2fa: boolean;
 
   constructor(private readonly db: DbService, @Inject(ENV) env: Env, private readonly tentativas: Tentativas) {
     this.cripto = new Cripto(env.CHAVE_SEGREDOS ?? CHAVE_DEV);
+    this.exigir2fa = env.BO_EXIGIR_2FA === 'true';
   }
 
   /** Passo 1: e-mail e senha. Devolve um ticket de 5 minutos para o passo do código de 6 dígitos. */
-  async login(email: string, senha: string, ip?: string) {
+  async login(email: string, senha: string, ip?: string, userAgent?: string) {
     const chave = this.tentativas.chave('bo', email);
     await this.tentativas.exigirSemBloqueio(chave);
-    const u = (await this.db.semTenant((c) => c.query('SELECT id, email, senha_hash, status, mfa_secret FROM usuario_interno WHERE lower(email) = lower($1)', [email]))).rows[0];
+    const u = (await this.db.semTenant((c) => c.query('SELECT id, nome, email, papel, senha_hash, status, mfa_secret FROM usuario_interno WHERE lower(email) = lower($1)', [email]))).rows[0];
     const ok = await conferirSenha(u?.senha_hash ?? null, senha);
     if (!ok || u.status !== 'ATIVO') {
       await this.tentativas.registrar(chave, ip, false);
       throw new UnauthorizedException('E-mail ou senha incorretos.');
+    }
+    if (!this.exigir2fa) {
+      // 2FA desligado (BO_EXIGIR_2FA=false): a senha basta e a sessão já nasce aqui.
+      await this.tentativas.registrar(chave, ip, true);
+      return { etapa: 'ENTROU' as const, ...(await this.abrirSessao(u, ip, userAgent)) };
     }
     if (u.mfa_secret) {
       return { etapa: 'MFA' as const, ticket: this.cripto.assinar({ uid: u.id, etapa: 'MFA' }, VALIDADE_TICKET_SEG) };
@@ -62,13 +69,14 @@ export class BoAuthService {
       throw new UnauthorizedException('Código incorreto ou já usado. Confira o aplicativo autenticador.');
     }
     await this.tentativas.registrar(chave, ip, true);
+    await this.db.semTenant((c) => c.query('UPDATE usuario_interno SET mfa_ultimo_passo = $2, mfa_secret = coalesce(mfa_secret, $3) WHERE id = $1', [u.id, passo, configurando ? this.cripto.cifrar(segredo) : null]));
+    return this.abrirSessao(u, ip, userAgent);
+  }
 
+  private async abrirSessao(u: { id: string; nome: string; email: string; papel: string }, ip?: string, userAgent?: string) {
     const token = novoToken();
     const expiraEm = new Date(Date.now() + HORAS_SESSAO * 3_600_000);
-    await this.db.semTenant(async (c) => {
-      await c.query('UPDATE usuario_interno SET mfa_ultimo_passo = $2, mfa_secret = coalesce(mfa_secret, $3) WHERE id = $1', [u.id, passo, configurando ? this.cripto.cifrar(segredo) : null]);
-      await c.query('INSERT INTO sessao_interna (token_hash, usuario_interno_id, expira_em, ip, user_agent) VALUES ($1,$2,$3,$4,$5)', [sha256(token), u.id, expiraEm, ip ?? null, userAgent ?? null]);
-    });
+    await this.db.semTenant((c) => c.query('INSERT INTO sessao_interna (token_hash, usuario_interno_id, expira_em, ip, user_agent) VALUES ($1,$2,$3,$4,$5)', [sha256(token), u.id, expiraEm, ip ?? null, userAgent ?? null]));
     return { token, expiraEm, interno: { id: u.id, nome: u.nome, email: u.email, papel: u.papel as PapelInterno } };
   }
 

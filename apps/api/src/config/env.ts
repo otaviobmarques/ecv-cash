@@ -32,6 +32,8 @@ const schema = z.object({
   ECV_PIX_CHAVE: z.string().optional(),
   ECV_PIX_NOME: z.string().default('ECV CASH'),
   ECV_PIX_CIDADE: z.string().default('SAO PAULO'),
+  /** 2FA (aplicativo autenticador) no login do backoffice. "false" desliga: entra só com e-mail e senha. */
+  BO_EXIGIR_2FA: z.enum(['true', 'false']).default('true'),
   /** 32 bytes em base64. Cifra segredos de 2FA e assina tickets. Obrigatória em produção. */
   CHAVE_SEGREDOS: z.string().optional(),
 });

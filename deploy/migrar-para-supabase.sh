@@ -54,5 +54,5 @@ while IFS= read -r q; do
 done < <(local_sql -c "$contar")
 [ $diferente = 0 ] && echo "Pronto: todas as tabelas batem." || { echo "Há diferenças acima. Não desligue a VPS e mande esta saída."; exit 1; }
 echo
-echo "Último passo: na Vercel (projeto ecv-cash-api), troque CHAVE_SEGREDOS pelo valor do deploy/.env desta VPS e faça Redeploy."
-echo "Sem isso o 2FA do backoffice não abre (os segredos foram cifrados com a chave daqui)."
+echo "Se o 2FA do backoffice estiver ligado na Vercel (BO_EXIGIR_2FA diferente de false): troque CHAVE_SEGREDOS no projeto"
+echo "ecv-cash-api pelo valor do deploy/.env desta VPS e faça Redeploy. Sem isso o 2FA de quem veio daqui não abre."

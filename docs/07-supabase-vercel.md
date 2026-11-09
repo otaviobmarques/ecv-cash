@@ -15,7 +15,7 @@ o RLS continua no banco, a API roda como `ecv_app` e as migrações rodam como `
 `DATABASE_URL` (pooler do Supabase em **modo transação**, porta 6543, usuário `ecv_app.<ref>`, `?sslmode=require&uselibpqcompat=true`),
 `DATABASE_URL_OWNER` (pooler em **modo sessão**, porta 5432, usuário `ecv_owner.<ref>`, usado só no build para migrar),
 `NODE_ENV=production`, `CHAVE_SEGREDOS` (**a mesma da VPS** se os dados vieram de lá), `CRON_SECRET`, `PG_POOL_MAX=3`,
-`ORIGENS_PERMITIDAS`, `URL_APP`, `URL_BACKOFFICE`, `EXPOR_CONVITE`, `TRUST_PROXY_SALTOS=1` e as de SMTP e PIX, como na VPS.
+`BO_EXIGIR_2FA` (`false` desliga o 2FA do backoffice; padrão `true`), `ORIGENS_PERMITIDAS`, `URL_APP`, `URL_BACKOFFICE`, `EXPOR_CONVITE`, `TRUST_PROXY_SALTOS=1` e as de SMTP e PIX, como na VPS.
 Nas telas: `VITE_API_URL=/api`.
 
 ## Banco novo (uma vez, no SQL Editor do Supabase)
@@ -33,7 +33,7 @@ REVOKE USAGE ON SCHEMA public FROM anon, authenticated;  -- o ECV Cash não usa 
 ## Trazer os dados da VPS
 Depois do primeiro deploy de produção da API (que cria o esquema), rode na VPS `deploy/migrar-para-supabase.sh`
 (as instruções estão no topo do arquivo). Ele confere se as migrações batem, se o destino está vazio, copia tudo numa
-transação só e compara a quantidade de linhas de cada tabela. Depois troque o `CHAVE_SEGREDOS` da Vercel pelo da VPS.
+transação só e compara a quantidade de linhas de cada tabela. Com o 2FA ligado, troque depois o `CHAVE_SEGREDOS` da Vercel pelo da VPS.
 
 ## Limites da Vercel
 - Upload de no máximo 4,5 MB por requisição (o sistema aceita até 5 MB em anexos e planilhas). Arquivos maiores que isso falham na Vercel.
