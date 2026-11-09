@@ -7,5 +7,4 @@ coverage/
 *.log
 .DS_Store
 e2e/saida/
-apps/api/public/
 .vercel/

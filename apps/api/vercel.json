@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "mkdir -p public && pnpm build && if [ \"$VERCEL_ENV\" = production ]; then node dist/db/migrate.js; fi",
+  "buildCommand": "pnpm build && if [ \"$VERCEL_ENV\" = production ]; then node dist/db/migrate.js; fi",
   "outputDirectory": "public",
   "regions": ["gru1"],
   "functions": {
