@@ -4,10 +4,32 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build && if [ \"$VERCEL_ENV\" = production ]; then node dist/db/migrate.js; fi",
   "outputDirectory": "public",
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "functions": {
-    "api/index.js": { "maxDuration": 300, "includeFiles": "dist/**" }
+    "api/index.js": {
+      "maxDuration": 300,
+      "includeFiles": "dist/**"
+    }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
-  "crons": [{ "path": "/interno/agendador", "schedule": "0 11 * * *" }]
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://ecv-cash-app.vercel.app/",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/interno/agendador",
+      "schedule": "0 11 * * *"
+    }
+  ]
 }
