@@ -20,7 +20,7 @@ function Moldura() {
       <header className="topo" style={{ borderBottom: '3px solid var(--verde)' }}>
         <div className="linha" style={{ alignItems: 'center' }}>
           <Link to="/" style={{ textDecoration: 'none' }}><b style={{ fontSize: 18, color: 'var(--verde)' }}>ECV Cash · Backoffice</b></Link>
-          <Pilula tipo="info">Sistema separado · 2FA ativo</Pilula>
+          <Pilula tipo="info">Sistema separado</Pilula>
           <nav className="linha" aria-label="Seções" style={{ gap: 16, marginLeft: 8 }}>
             <NavLink to="/" end style={estilo}>Grupos</NavLink>
             {eu.permissoes.includes('assinatura.ver') && <NavLink to="/mensalidades" style={estilo}>Mensalidades</NavLink>}
