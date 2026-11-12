@@ -51,7 +51,7 @@ describe('DRE e fluxo de caixa', () => {
     const t = (await fin.post('/pagar/titulos', { beneficiario: 'Imobiliária', descricao: 'Aluguel', vencimento: dias(3), competencia: MES, valorCentavos: 50000 })).body;
     await ger.post(`/pagar/titulos/${t.id}/aprovar`); await ger.post(`/pagar/titulos/${t.id}/pagamentos`, { contaId: banco });
     // previsões: laudo faturado (vence em 10 dias), conta a pagar aprovada e uma pendente.
-    // A competência vai explícita: sem ela, vale o mês do vencimento, que perto do fim do mês já é o seguinte.
+    // A competência vai explícita: sem ela vale o mês do vencimento, e dias(20) cai no mês seguinte a partir do dia ~11.
     await lancar(faturado);
     const f1 = (await fin.post('/pagar/titulos', { beneficiario: 'Internet', descricao: 'Internet', vencimento: dias(3), competencia: ATUAL, valorCentavos: 20000 })).body; await ger.post(`/pagar/titulos/${f1.id}/aprovar`);
     await fin.post('/pagar/titulos', { beneficiario: 'Sistema', descricao: 'Sistema', vencimento: dias(20), competencia: ATUAL, valorCentavos: 5000 });
