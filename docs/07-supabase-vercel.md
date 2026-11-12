@@ -7,8 +7,8 @@ o RLS continua no banco, a API roda como `ecv_app` e as migrações rodam como `
 |---|---|---|
 | Banco | Supabase `ecv-cash` (sa-east-1) | Papéis `ecv_owner`, `ecv_app` e `ecv_definer`, criados uma vez (ver "Banco novo"). A Data API (PostgREST) não enxerga o esquema `public`. |
 | API | Vercel `ecv-cash-api` (raiz `apps/api`) | Function `api/index.js` → `dist/serverless.js`. O deploy de **produção** roda as migrações. |
-| Sistema | Vercel `ecv-cash-app` (raiz `apps/web`) | `/api/*` é reescrito para a API: mesmo domínio, cookie de sessão sem CORS. |
-| Backoffice | Vercel `ecv-cash-admin` (raiz `apps/backoffice`) | Mesmo esquema do sistema. |
+| Sistema | Vercel `ecv-cash-app` (raiz `apps/web`), em `app.ecvcash.com.br` (`sistema.ecvcash.com.br` redireciona para lá) | `/api/*` é reescrito para a API: mesmo domínio, cookie de sessão sem CORS. |
+| Backoffice | Vercel `ecv-cash-admin` (raiz `apps/backoffice`), em `admin.ecvcash.com.br` | Mesmo esquema do sistema. |
 | Rotina diária | Vercel Cron → `GET /interno/agendador` às 11h UTC (8h de Brasília) | Protegida por `CRON_SECRET`. Na Vercel o `setInterval` do agendador fica desligado. |
 
 ## Variáveis da API (Vercel)
