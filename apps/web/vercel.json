@@ -6,6 +6,17 @@
   "outputDirectory": "dist",
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "sistema.ecvcash.com.br"
+        }
+      ],
+      "destination": "https://app.ecvcash.com.br/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
